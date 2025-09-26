@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -145,6 +146,88 @@ public class PortfolioCalculationService {
                         position.getPositionSize().setScale(0, BigDecimal.ROUND_HALF_UP),
                         position.getCurrentPrice().setScale(2, BigDecimal.ROUND_HALF_UP),
                         position.getMarketValue().setScale(2, BigDecimal.ROUND_HALF_UP)));
+            }
+            
+            return summary.toString();
+        } finally {
+            portfolioLock.readLock().unlock();
+        }
+    }
+    
+    /**
+     * Gets a summary of the portfolio with change indicators
+     * READ operation - multiple threads can access simultaneously
+     */
+    public String getPortfolioSummaryWithChanges(Portfolio portfolio, Map<String, BigDecimal> previousStockPrices, Map<String, BigDecimal> previousOptionPrices) {
+        portfolioLock.readLock().lock();
+        try {
+            StringBuilder summary = new StringBuilder();
+            summary.append("=== Portfolio Summary (Price Changes Detected) ===\n");
+            summary.append("Total Positions: ").append(portfolio.getPositionCount()).append("\n");
+            summary.append("Total NAV: $").append(portfolio.getTotalNAV().setScale(2, BigDecimal.ROUND_HALF_UP)).append("\n");
+            summary.append("Last Updated: ").append(portfolio.getLastUpdated()).append("\n");
+            
+            // Count changes
+            int upCount = 0, downCount = 0, newCount = 0;
+            for (Position position : portfolio.getPositions()) {
+                String symbol = position.getSymbol();
+                BigDecimal currentPrice = position.getCurrentPrice();
+                BigDecimal previousPrice = null;
+                
+                if (position.getSecurity().getType().name().equals("STOCK")) {
+                    previousPrice = previousStockPrices.get(symbol);
+                } else {
+                    previousPrice = previousOptionPrices.get(symbol);
+                }
+                
+                if (previousPrice == null) {
+                    newCount++;
+                } else {
+                    int comparison = currentPrice.compareTo(previousPrice);
+                    if (comparison > 0) upCount++;
+                    else if (comparison < 0) downCount++;
+                }
+            }
+            
+            summary.append("Changes: ").append(upCount).append(" UP, ").append(downCount).append(" DOWN, ").append(newCount).append(" NEW\n\n");
+            
+            summary.append("=== Position Details ===\n");
+            for (Position position : portfolio.getPositions()) {
+                String symbol = position.getSymbol();
+                BigDecimal currentPrice = position.getCurrentPrice();
+                BigDecimal previousPrice = null;
+                String changeIndicator = "";
+                
+                // Determine previous price and change indicator
+                if (position.getSecurity().getType().name().equals("STOCK")) {
+                    previousPrice = previousStockPrices.get(symbol);
+                } else {
+                    previousPrice = previousOptionPrices.get(symbol);
+                }
+                
+                if (previousPrice != null) {
+                    int comparison = currentPrice.compareTo(previousPrice);
+                    if (comparison > 0) {
+                        BigDecimal change = currentPrice.subtract(previousPrice);
+                        BigDecimal percentChange = change.divide(previousPrice, 4, BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal("100"));
+                        changeIndicator = String.format(" [UP +$%.2f (+%.2f%%)]", change, percentChange);
+                    } else if (comparison < 0) {
+                        BigDecimal change = currentPrice.subtract(previousPrice);
+                        BigDecimal percentChange = change.divide(previousPrice, 4, BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal("100"));
+                        changeIndicator = String.format(" [DOWN $%.2f (%.2f%%)]", change.abs(), percentChange.abs());
+                    } else {
+                        changeIndicator = " [SAME]"; // No change (shouldn't happen with our logic)
+                    }
+                } else {
+                    changeIndicator = " [NEW]"; // New price (first time)
+                }
+                
+                summary.append(String.format("%-20s | %10s | $%10s | $%12s%s\n",
+                        position.getSymbol(),
+                        position.getPositionSize().setScale(0, BigDecimal.ROUND_HALF_UP),
+                        position.getCurrentPrice().setScale(2, BigDecimal.ROUND_HALF_UP),
+                        position.getMarketValue().setScale(2, BigDecimal.ROUND_HALF_UP),
+                        changeIndicator));
             }
             
             return summary.toString();

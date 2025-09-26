@@ -8,7 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +40,10 @@ public class PortfolioManagerService {
     private ScheduledExecutorService scheduler;
     private boolean isRunning = false;
     
+    // Price change tracking for smart display
+    private final Map<String, BigDecimal> previousPrices = new HashMap<>();
+    private final Map<String, BigDecimal> previousOptionPrices = new HashMap<>();
+    
     /**
      * Initializes the portfolio by loading positions from CSV
      */
@@ -61,8 +68,18 @@ public class PortfolioManagerService {
         // Set portfolio in atomic reference
         portfolioRef.set(portfolio);
         
+        // Initialize previous prices for change tracking
+        updatePreviousPrices(portfolio);
+        
         logger.info("Portfolio initialized with {} positions", portfolio.getPositionCount());
-        logger.info("Initial portfolio summary:\n{}", portfolioCalculationService.getPortfolioSummary(portfolio));
+        
+        // Display initial summary with "new" indicators
+        String separator = "=================================================================================";
+        String initialSummary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, previousPrices, previousOptionPrices);
+        System.out.println("\n" + separator);
+        System.out.println(initialSummary);
+        System.out.println(separator);
+        logger.info("Initial portfolio summary:\n{}", initialSummary);
     }
     
     /**
@@ -140,7 +157,7 @@ public class PortfolioManagerService {
     }
     
     /**
-     * Displays the current portfolio summary
+     * Displays the current portfolio summary only when prices change
      */
     private void displayPortfolioSummary() {
         Portfolio portfolio = portfolioRef.get();
@@ -149,8 +166,16 @@ public class PortfolioManagerService {
             return;
         }
         
+        // Check if any prices have changed
+        boolean hasChanges = checkForPriceChanges(portfolio);
+        
+        if (!hasChanges) {
+            // No changes detected, skip display
+            return;
+        }
+        
         String separator = "=================================================================================";
-        String summary = portfolioCalculationService.getPortfolioSummary(portfolio);
+        String summary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, previousPrices, previousOptionPrices);
         
         // Display in console for immediate visibility
         System.out.println("\n" + separator);
@@ -159,6 +184,9 @@ public class PortfolioManagerService {
         
         // Also log it
         logger.info("\n{}\n{}\n{}", separator, summary, separator);
+        
+        // Update previous prices for next comparison
+        updatePreviousPrices(portfolio);
     }
     
     /**
@@ -173,6 +201,51 @@ public class PortfolioManagerService {
      */
     public boolean isRunning() {
         return isRunning;
+    }
+    
+    /**
+     * Checks if any prices have changed since last display
+     */
+    private boolean checkForPriceChanges(Portfolio portfolio) {
+        boolean hasChanges = false;
+        
+        for (Position position : portfolio.getPositions()) {
+            String symbol = position.getSymbol();
+            BigDecimal currentPrice = position.getCurrentPrice();
+            
+            if (position.getSecurity().getType().name().equals("STOCK")) {
+                BigDecimal previousPrice = previousPrices.get(symbol);
+                if (previousPrice == null || currentPrice.compareTo(previousPrice) != 0) {
+                    hasChanges = true;
+                    break;
+                }
+            } else {
+                // For options, check option prices
+                BigDecimal previousPrice = previousOptionPrices.get(symbol);
+                if (previousPrice == null || currentPrice.compareTo(previousPrice) != 0) {
+                    hasChanges = true;
+                    break;
+                }
+            }
+        }
+        
+        return hasChanges;
+    }
+    
+    /**
+     * Updates the previous prices for next comparison
+     */
+    private void updatePreviousPrices(Portfolio portfolio) {
+        for (Position position : portfolio.getPositions()) {
+            String symbol = position.getSymbol();
+            BigDecimal currentPrice = position.getCurrentPrice();
+            
+            if (position.getSecurity().getType().name().equals("STOCK")) {
+                previousPrices.put(symbol, currentPrice);
+            } else {
+                previousOptionPrices.put(symbol, currentPrice);
+            }
+        }
     }
     
     /**
