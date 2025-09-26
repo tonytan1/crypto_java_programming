@@ -35,21 +35,31 @@ crypto_java_programming/
 │   │   └── Portfolio.java               # Portfolio model
 │   ├── repository/
 │   │   └── SecurityRepository.java      # Data access layer
-│   └── service/
-│       ├── PortfolioManagerService.java # Main orchestration service
-│       ├── PositionLoaderService.java   # CSV position loader
-│       ├── MarketDataService.java       # Stock price simulation
-│       ├── OptionPricingService.java    # Black-Scholes pricing
-│       └── PortfolioCalculationService.java # Portfolio calculations
+│   ├── service/
+│   │   ├── PortfolioManagerService.java # Main orchestration service
+│   │   ├── PositionLoaderService.java   # CSV position loader
+│   │   ├── MarketDataService.java       # Stock price simulation
+│   │   ├── OptionPricingService.java    # Black-Scholes pricing
+│   │   ├── PortfolioCalculationService.java # Portfolio calculations
+│   │   └── DataInitializationService.java # Database initialization
+│   ├── event/
+│   │   ├── EventBus.java                # Event distribution hub
+│   │   ├── EventPublisher.java          # Event publishing utility
+│   │   ├── PortfolioEventListener.java  # Event listener interface
+│   │   └── listener/
+│   │       └── ConsoleEventListener.java # Console event handler
+│   └── util/
+│       └── ProtobufUtils.java           # Protobuf utility functions
 ├── src/main/resources/
 │   ├── application.properties           # Application configuration
 │   ├── schema.sql                      # Database schema
-│   ├── data.sql                        # Sample data
+│   ├── logback.xml                     # Logging configuration
 │   └── sample-positions.csv            # Sample portfolio positions
 ├── src/main/proto/
-│   └── market_data.proto               # Protobuf schema definitions
-├── src/main/java/com/portfolio/util/
-│   └── ProtobufUtils.java              # Protobuf utility functions
+│   ├── market_data.proto               # Market data Protobuf schema
+│   └── portfolio_events.proto          # Portfolio events Protobuf schema
+├── docs/
+│   └── REAL_TIME_EVENT_STREAMING.md    # Event streaming documentation
 ├── build.gradle                        # Gradle build configuration
 ├── setup.bat                          # Windows setup script
 ├── run.bat                            # Windows run script
@@ -80,14 +90,9 @@ Event Bus → Real-time Event Streaming → Multiple Subscribers
 ## Requirements
 
 - **Java**: JDK 1.8 or higher
-- **Build Tool**: Gradle
-- **Database**: H2 or SQLite (embedded)
+- **Build Tool**: Gradle (included via wrapper)
+- **Database**: H2 (embedded)
 - **Dependencies**: Spring, Guava, Protobuf, JUnit, Cucumber
-
-## Prerequisites
-
-- **Java Development Kit (JDK) 8 or higher**
-- **Windows PowerShell** (for running batch files)
 - **Internet connection** (for downloading dependencies)
 
 ## Installation
@@ -171,12 +176,8 @@ This project is fully cross-platform and works on Windows, macOS, and Linux syst
 - ✅ **H2 database** - Embedded database works everywhere
 - ✅ **Spring Framework** - Cross-platform dependency injection
 - ✅ **Thread-safe architecture** - Consistent behavior across platforms
-
-### Requirements
-
-- **Java Development Kit (JDK) 1.8 or higher**
-- **Gradle** (included via wrapper)
-- **No additional dependencies** required
+- ✅ **Event-driven architecture** - Real-time event streaming
+- ✅ **Protobuf integration** - High-performance data serialization
 
 ## Usage
 
