@@ -146,15 +146,18 @@ public class PortfolioManagerService {
         }
     }
     
-    /**
-     * Updates the portfolio with new market data
-     */
-    private void updatePortfolio() {
-        Portfolio portfolio = portfolioRef.get();
-        if (portfolio != null) {
-            portfolioCalculationService.updateMarketDataAndRecalculate(portfolio);
+        /**
+         * Updates the portfolio with new market data
+         */
+        private void updatePortfolio() {
+            Portfolio portfolio = portfolioRef.get();
+            if (portfolio != null) {
+                portfolioCalculationService.updateMarketDataAndRecalculate(portfolio);
+                
+                // Log market data in Protobuf format for debugging
+                marketDataService.logMarketDataSnapshot(previousPrices);
+            }
         }
-    }
     
     /**
      * Displays the current portfolio summary only when prices change

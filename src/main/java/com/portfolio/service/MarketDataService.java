@@ -1,8 +1,10 @@
 package com.portfolio.service;
 
+import com.portfolio.marketdata.MarketDataProtos;
 import com.portfolio.model.Security;
 import com.portfolio.model.SecurityType;
 import com.portfolio.repository.SecurityRepository;
+import com.portfolio.util.ProtobufUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -162,8 +164,56 @@ public class MarketDataService {
     public long getMinUpdateInterval() {
         return minUpdateInterval;
     }
-    
+
     public long getMaxUpdateInterval() {
         return maxUpdateInterval;
+    }
+    
+    /**
+     * Creates a MarketDataSnapshot Protobuf message with current prices and change information.
+     * 
+     * @param previousPrices Map of previous prices for change calculation
+     * @return MarketDataSnapshot Protobuf message
+     */
+    public MarketDataProtos.MarketDataSnapshot createMarketDataSnapshot(Map<String, BigDecimal> previousPrices) {
+        return ProtobufUtils.createMarketDataSnapshot(currentPrices, previousPrices);
+    }
+    
+    /**
+     * Creates a MarketDataUpdate Protobuf message for a single security.
+     * 
+     * @param ticker Security ticker symbol
+     * @param previousPrice Previous price for change calculation
+     * @return MarketDataUpdate Protobuf message
+     */
+    public MarketDataProtos.MarketDataUpdate createMarketDataUpdate(String ticker, BigDecimal previousPrice) {
+        BigDecimal currentPrice = currentPrices.get(ticker);
+        if (currentPrice == null) {
+            currentPrice = BigDecimal.ZERO;
+        }
+        
+        long timestamp = System.currentTimeMillis();
+        return ProtobufUtils.createMarketDataUpdate(ticker, currentPrice, previousPrice, timestamp);
+    }
+    
+    /**
+     * Serializes current market data to byte array using Protobuf.
+     * 
+     * @param previousPrices Map of previous prices for change calculation
+     * @return Serialized byte array
+     */
+    public byte[] serializeMarketData(Map<String, BigDecimal> previousPrices) {
+        MarketDataProtos.MarketDataSnapshot snapshot = createMarketDataSnapshot(previousPrices);
+        return ProtobufUtils.serializeMarketDataSnapshot(snapshot);
+    }
+    
+    /**
+     * Logs market data in Protobuf format for debugging.
+     * 
+     * @param previousPrices Map of previous prices for change calculation
+     */
+    public void logMarketDataSnapshot(Map<String, BigDecimal> previousPrices) {
+        MarketDataProtos.MarketDataSnapshot snapshot = createMarketDataSnapshot(previousPrices);
+        logger.debug("Market Data Snapshot (Protobuf):\n{}", ProtobufUtils.toReadableString(snapshot));
     }
 }

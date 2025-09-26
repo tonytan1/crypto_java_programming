@@ -16,6 +16,7 @@ This system provides traders with real-time portfolio valuation capabilities, ca
 - **Real-time Market Data**: Mock market data provider with geometric Brownian motion simulation
 - **Option Pricing**: Black-Scholes model for European options pricing
 - **Real-time Updates**: Live portfolio valuation with console output
+- **Protocol Buffers**: High-performance binary serialization for market data
 - **Enterprise Thread Safety**: ReadWriteLock, AtomicReference, ConcurrentHashMap, and AtomicLong+LCG
 - **High Performance**: Optimized for read-heavy workloads with parallel read operations
 
@@ -45,6 +46,10 @@ crypto_java_programming/
 │   ├── schema.sql                      # Database schema
 │   ├── data.sql                        # Sample data
 │   └── sample-positions.csv            # Sample portfolio positions
+├── src/main/proto/
+│   └── market_data.proto               # Protobuf schema definitions
+├── src/main/java/com/portfolio/util/
+│   └── ProtobufUtils.java              # Protobuf utility functions
 ├── build.gradle                        # Gradle build configuration
 ├── setup.bat                          # Windows setup script
 ├── run.bat                            # Windows run script
@@ -259,6 +264,83 @@ Where:
 - **Options**: `Market Value = Position Size × Option Price`
 - **Short Positions**: Multiply by -1
 - **Portfolio NAV**: Sum of all position market values
+
+## Protocol Buffers Integration
+
+### 🚀 **Protobuf Market Data Messages**
+
+The system now includes **Protocol Buffers (Protobuf)** integration for efficient, structured data serialization and communication. This provides significant performance benefits and enables future scalability.
+
+#### **Protobuf Schema (`src/main/proto/market_data.proto`)**
+
+```protobuf
+message MarketDataUpdate {
+  string ticker = 1;           // Security ticker symbol
+  double price = 2;            // Current price
+  int64 timestamp = 3;         // Unix timestamp in milliseconds
+  double volume = 4;           // Trading volume (optional)
+  string source = 5;           // Data source identifier
+  PriceChange price_change = 6; // Price change information
+}
+
+message PriceChange {
+  double absolute_change = 1;  // Absolute price change
+  double percentage_change = 2; // Percentage change
+  ChangeDirection direction = 3; // Direction of change
+}
+
+enum ChangeDirection {
+  UP = 0;      // Price increased
+  DOWN = 1;    // Price decreased
+  SAME = 2;    // No change
+  NEW = 3;     // New price (first time)
+}
+
+message MarketDataSnapshot {
+  repeated MarketDataUpdate updates = 1;  // All price updates
+  int64 snapshot_time = 2;                // Snapshot timestamp
+  int32 total_securities = 3;             // Total number of securities
+}
+```
+
+#### **Key Features**
+
+- **📦 Structured Data**: Type-safe message definitions for market data
+- **⚡ High Performance**: 30-50% smaller than JSON, 3-10x faster serialization
+- **🔄 Version Compatibility**: Schema evolution without breaking changes
+- **🎯 Real-time Ready**: Optimized for streaming market data updates
+- **🔍 Debug Support**: Human-readable logging and debugging utilities
+
+#### **Implementation Components**
+
+1. **`ProtobufUtils.java`**: Utility class for serialization/deserialization
+2. **`MarketDataService`**: Enhanced with Protobuf message creation
+3. **Generated Classes**: Auto-generated from `.proto` schema
+4. **Integration Tests**: Comprehensive test coverage
+
+#### **Usage Examples**
+
+```java
+// Create market data snapshot
+MarketDataSnapshot snapshot = marketDataService.createMarketDataSnapshot(previousPrices);
+
+// Serialize to byte array
+byte[] data = ProtobufUtils.serializeMarketDataSnapshot(snapshot);
+
+// Deserialize from byte array
+MarketDataSnapshot restored = ProtobufUtils.deserializeMarketDataSnapshot(data);
+
+// Human-readable format
+String readable = ProtobufUtils.toReadableString(snapshot);
+```
+
+#### **Benefits for Portfolio System**
+
+- **Real-time Streaming**: Efficient market data distribution
+- **API Integration**: Structured data for web/mobile clients
+- **Data Persistence**: Compact storage of historical data
+- **Microservices**: Inter-service communication
+- **External Systems**: Language-agnostic data exchange
 
 ## Database Schema
 

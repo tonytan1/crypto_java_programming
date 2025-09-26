@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package com.portfolio.marketdata;
+
+option java_package = "com.portfolio.marketdata";
+option java_outer_classname = "MarketDataProtos";
+
+// Market data update for a single security
+message MarketDataUpdate {
+  string ticker = 1;           // Security ticker symbol
+  double price = 2;            // Current price
+  int64 timestamp = 3;         // Unix timestamp in milliseconds
+  double volume = 4;           // Trading volume (optional)
+  string source = 5;           // Data source identifier
+  PriceChange price_change = 6; // Price change information
+}
+
+// Price change details
+message PriceChange {
+  double absolute_change = 1;  // Absolute price change
+  double percentage_change = 2; // Percentage change
+  ChangeDirection direction = 3; // Direction of change
+}
+
+// Direction of price change
+enum ChangeDirection {
+  UP = 0;      // Price increased
+  DOWN = 1;    // Price decreased
+  SAME = 2;    // No change
+  NEW = 3;     // New price (first time)
+}
+
+// Snapshot of all market data at a point in time
+message MarketDataSnapshot {
+  repeated MarketDataUpdate updates = 1;  // All price updates
+  int64 snapshot_time = 2;                // Snapshot timestamp
+  int32 total_securities = 3;             // Total number of securities
+}
+
+// Market data subscription request
+message MarketDataSubscription {
+  repeated string tickers = 1;  // List of tickers to subscribe to
+  int32 update_frequency_ms = 2; // Update frequency in milliseconds
+  bool include_volume = 3;      // Whether to include volume data
+}
+
+// Market data subscription response
+message MarketDataSubscriptionResponse {
+  bool success = 1;             // Whether subscription was successful
+  string message = 2;           // Response message
+  repeated string subscribed_tickers = 3; // Successfully subscribed tickers
+}
