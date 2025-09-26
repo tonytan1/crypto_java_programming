@@ -12,10 +12,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.*;
-import java.util.Date;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -266,7 +263,6 @@ public class DataInitializationServiceTest {
             Security security = invocation.getArgument(0);
             if (security.getMaturity() != null) {
                 // Verify maturity date is reasonable (not too far in the past or future)
-                LocalDate now = LocalDate.now();
                 LocalDate fiveYearsAgo = LocalDate.now().minusYears(5);
                 LocalDate twoYearsFromNow = LocalDate.now().plusYears(2);
                 

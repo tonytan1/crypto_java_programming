@@ -7,7 +7,6 @@ import org.junit.jupiter.api.DisplayName;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -274,7 +273,7 @@ public class PortfolioTest {
             threads[i] = new Thread(() -> {
                 for (int j = 0; j < 100; j++) {
                     // Read operations
-                    int count = portfolio.getPositionCount();
+                    portfolio.getPositionCount();
                     List<Position> positions = portfolio.getPositions();
                     
                     // Write operations

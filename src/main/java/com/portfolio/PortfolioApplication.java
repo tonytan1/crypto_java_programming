@@ -9,7 +9,6 @@ import com.portfolio.service.PortfolioManagerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -53,13 +52,12 @@ public class PortfolioApplication {
     private boolean isRunning = false;
 
     public static void main(String[] args) {
-        try {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(PortfolioApplication.class)) {
             logger.info("=== PORTFOLIO APPLICATION STARTING ===");
             logger.info("Starting Portfolio Application...");
             logger.info("Logging system initialized successfully");
             
             // Initialize Spring context
-            ApplicationContext context = new AnnotationConfigApplicationContext(PortfolioApplication.class);
             PortfolioApplication app = context.getBean(PortfolioApplication.class);
             
             // Initialize and run the application

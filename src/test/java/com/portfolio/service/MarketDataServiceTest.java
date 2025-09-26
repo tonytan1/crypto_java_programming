@@ -4,7 +4,6 @@ import com.portfolio.model.Security;
 import com.portfolio.model.SecurityType;
 import com.portfolio.repository.SecurityRepository;
 import com.portfolio.marketdata.MarketDataProtos;
-import com.portfolio.util.ProtobufUtils;
 import com.portfolio.event.EventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
@@ -14,8 +13,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -146,19 +143,13 @@ public class MarketDataServiceTest {
         marketDataService.initializePrices();
         
         Security aapl = testStocks.get(0);
-        BigDecimal initialPrice = marketDataService.getCurrentPrice("AAPL");
         
         // Simulate multiple price changes
-        BigDecimal previousPrice = initialPrice;
         for (int i = 0; i < 10; i++) {
             BigDecimal newPrice = marketDataService.simulateNextPrice("AAPL", aapl);
             
             assertNotNull(newPrice);
             assertTrue(newPrice.compareTo(BigDecimal.ZERO) > 0, "Price should remain positive");
-            
-            // Price should not be exactly the same (very unlikely with random generation)
-            // But we'll allow for the possibility in our assertion
-            previousPrice = newPrice;
         }
     }
 

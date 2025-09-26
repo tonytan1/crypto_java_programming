@@ -6,8 +6,6 @@ import com.portfolio.service.OptionPricingService;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.When;
 import io.cucumber.java.en.Then;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,25 +18,18 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class OptionPricingStepDefinitions {
 
-    private ApplicationContext context;
     private OptionPricingService optionPricingService;
     private Security callOption;
     private Security putOption;
     private BigDecimal underlyingPrice;
     private BigDecimal callPrice;
     private BigDecimal putPrice;
-    private BigDecimal riskFreeRate = new BigDecimal("0.05");
 
     @Given("the option pricing service is available")
     public void theOptionPricingServiceIsAvailable() {
-        context = new AnnotationConfigApplicationContext();
         optionPricingService = new OptionPricingService();
     }
 
-    @Given("the risk-free rate is {int}%")
-    public void theRiskFreeRateIs(int rate) {
-        riskFreeRate = new BigDecimal(rate).divide(new BigDecimal("100"));
-    }
 
     @Given("I have an AAPL call option with:")
     public void iHaveAnAAPLCallOptionWith(io.cucumber.datatable.DataTable dataTable) {

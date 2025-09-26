@@ -25,7 +25,6 @@ public class PortfolioStepDefinitions {
 
     private ApplicationContext context;
     private PortfolioManagerService portfolioManagerService;
-    private OptionPricingService optionPricingService;
     private MarketDataService marketDataService;
     private Portfolio portfolio;
     private List<Map<String, String>> csvData;
@@ -38,7 +37,7 @@ public class PortfolioStepDefinitions {
     public void thePortfolioSystemIsInitialized() {
         context = new AnnotationConfigApplicationContext(PortfolioApplication.class);
         portfolioManagerService = context.getBean(PortfolioManagerService.class);
-        optionPricingService = context.getBean(OptionPricingService.class);
+        // OptionPricingService is not needed for portfolio tests
         marketDataService = context.getBean(MarketDataService.class);
     }
 

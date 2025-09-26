@@ -12,7 +12,6 @@ import org.mockito.MockitoAnnotations;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -172,6 +171,7 @@ public class PortfolioManagerServiceTest {
         try {
             java.lang.reflect.Field portfolioField = PortfolioManagerService.class.getDeclaredField("portfolioRef");
             portfolioField.setAccessible(true);
+            @SuppressWarnings("unchecked")
             AtomicReference<Portfolio> portfolioRef = (AtomicReference<Portfolio>) portfolioField.get(portfolioManagerService);
             portfolioRef.set(testPortfolio);
         } catch (Exception e) {
@@ -386,6 +386,7 @@ public class PortfolioManagerServiceTest {
         try {
             java.lang.reflect.Field portfolioField = PortfolioManagerService.class.getDeclaredField("portfolioRef");
             portfolioField.setAccessible(true);
+            @SuppressWarnings("unchecked")
             AtomicReference<Portfolio> portfolioRef = (AtomicReference<Portfolio>) portfolioField.get(portfolioManagerService);
             portfolioRef.set(testPortfolio);
         } catch (Exception e) {

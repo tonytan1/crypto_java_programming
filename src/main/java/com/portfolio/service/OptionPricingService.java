@@ -19,7 +19,6 @@ public class OptionPricingService {
     @Value("${portfolio.marketdata.risk-free-rate:0.02}")
     private BigDecimal riskFreeRate;
     
-    private static final BigDecimal SQRT_2_PI = new BigDecimal("2.506628274631000502415765284811");
     private static final int SCALE = 10;
     
     /**
