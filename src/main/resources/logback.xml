@@ -10,6 +10,7 @@
     <!-- File appender for application logs -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/portfolio-application.log</file>
+        <createDirs>true</createDirs>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>logs/portfolio-application.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
@@ -22,6 +23,7 @@
     <!-- File appender for portfolio summary logs -->
     <appender name="PORTFOLIO_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/portfolio-summary.log</file>
+        <createDirs>true</createDirs>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>logs/portfolio-summary.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>7</maxHistory>

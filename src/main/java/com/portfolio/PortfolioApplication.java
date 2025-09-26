@@ -26,7 +26,9 @@ public class PortfolioApplication {
 
     public static void main(String[] args) {
         try {
+            logger.info("=== PORTFOLIO APPLICATION STARTING ===");
             logger.info("Starting Portfolio Application...");
+            logger.info("Logging system initialized successfully");
             
             // Initialize Spring context
             ApplicationContext context = new AnnotationConfigApplicationContext(PortfolioApplication.class);
