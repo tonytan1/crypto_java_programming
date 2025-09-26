@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Main service that orchestrates the portfolio management system.
@@ -31,7 +32,8 @@ public class PortfolioManagerService {
     @Autowired
     private MarketDataService marketDataService;
     
-    private Portfolio portfolio;
+    // Thread-safe portfolio state using AtomicReference
+    private final AtomicReference<Portfolio> portfolioRef = new AtomicReference<>();
     private ScheduledExecutorService scheduler;
     private boolean isRunning = false;
     
@@ -51,10 +53,13 @@ public class PortfolioManagerService {
         }
         
         // Create portfolio
-        portfolio = new Portfolio(positions);
+        Portfolio portfolio = new Portfolio(positions);
         
         // Calculate initial values
         portfolioCalculationService.calculatePortfolioValues(portfolio);
+        
+        // Set portfolio in atomic reference
+        portfolioRef.set(portfolio);
         
         logger.info("Portfolio initialized with {} positions", portfolio.getPositionCount());
         logger.info("Initial portfolio summary:\n{}", portfolioCalculationService.getPortfolioSummary(portfolio));
@@ -69,7 +74,7 @@ public class PortfolioManagerService {
             return;
         }
         
-        if (portfolio == null) {
+        if (portfolioRef.get() == null) {
             logger.error("Portfolio not initialized. Call initializePortfolio() first.");
             return;
         }
@@ -128,13 +133,22 @@ public class PortfolioManagerService {
      * Updates the portfolio with new market data
      */
     private void updatePortfolio() {
-        portfolioCalculationService.updateMarketDataAndRecalculate(portfolio);
+        Portfolio portfolio = portfolioRef.get();
+        if (portfolio != null) {
+            portfolioCalculationService.updateMarketDataAndRecalculate(portfolio);
+        }
     }
     
     /**
      * Displays the current portfolio summary
      */
     private void displayPortfolioSummary() {
+        Portfolio portfolio = portfolioRef.get();
+        if (portfolio == null) {
+            logger.warn("Portfolio not available for summary display");
+            return;
+        }
+        
         String separator = "=================================================================================";
         String summary = portfolioCalculationService.getPortfolioSummary(portfolio);
         
@@ -151,7 +165,7 @@ public class PortfolioManagerService {
      * Gets the current portfolio
      */
     public Portfolio getPortfolio() {
-        return portfolio;
+        return portfolioRef.get();
     }
     
     /**
