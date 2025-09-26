@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package com.portfolio.events;
+
+option java_package = "com.portfolio.events";
+option java_outer_classname = "PortfolioEventProtos";
+
+// Main event wrapper
+message PortfolioEvent {
+  EventType type = 1;                    // Type of event
+  int64 timestamp = 2;                   // Event timestamp
+  string event_id = 3;                   // Unique event identifier
+  string source = 4;                     // Source service
+  oneof payload {                        // Event-specific data
+    MarketDataUpdate market_data = 5;
+    PortfolioSummary portfolio_summary = 6;
+    PositionUpdate position_update = 7;
+    SystemAlert system_alert = 8;
+  }
+}
+
+// Event types
+enum EventType {
+  MARKET_DATA_UPDATE = 0;               // Stock price changed
+  PORTFOLIO_RECALCULATED = 1;           // Portfolio NAV updated
+  POSITION_ADDED = 2;                   // New position added
+  POSITION_REMOVED = 3;                 // Position removed
+  POSITION_UPDATED = 4;                 // Position size changed
+  SYSTEM_STARTED = 5;                   // System startup
+  SYSTEM_STOPPED = 6;                   // System shutdown
+  ERROR_OCCURRED = 7;                   // Error event
+  PERFORMANCE_METRIC = 8;               // Performance data
+}
+
+// Market data update event
+message MarketDataUpdate {
+  string ticker = 1;
+  double price = 2;
+  double previous_price = 3;
+  double absolute_change = 4;
+  double percentage_change = 5;
+  ChangeDirection direction = 6;
+  int64 update_timestamp = 7;
+}
+
+// Portfolio summary event
+message PortfolioSummary {
+  double total_nav = 1;
+  int32 position_count = 2;
+  int64 calculation_timestamp = 3;
+  repeated PositionSummary positions = 4;
+  PerformanceMetrics performance = 5;
+}
+
+// Individual position summary
+message PositionSummary {
+  string symbol = 1;
+  double position_size = 2;
+  double current_price = 3;
+  double market_value = 4;
+  double unrealized_pnl = 5;
+  double percentage_of_portfolio = 6;
+}
+
+// Performance metrics
+message PerformanceMetrics {
+  double daily_pnl = 1;
+  double total_pnl = 2;
+  double portfolio_volatility = 3;
+  double sharpe_ratio = 4;
+  int64 calculation_time_ms = 5;
+}
+
+// Position update event
+message PositionUpdate {
+  string symbol = 1;
+  double old_size = 2;
+  double new_size = 3;
+  UpdateAction action = 4;
+  string reason = 5;
+}
+
+// Position update actions
+enum UpdateAction {
+  ADDED = 0;
+  REMOVED = 1;
+  SIZE_CHANGED = 2;
+  PRICE_UPDATED = 3;
+}
+
+// System alert event
+message SystemAlert {
+  AlertLevel level = 1;
+  string message = 2;
+  string component = 3;
+  map<string, string> metadata = 4;
+}
+
+// Alert levels
+enum AlertLevel {
+  INFO = 0;
+  WARNING = 1;
+  ERROR = 2;
+  CRITICAL = 3;
+}
+
+// Change direction (reused from market_data.proto)
+enum ChangeDirection {
+  UP = 0;
+  DOWN = 1;
+  SAME = 2;
+  NEW = 3;
+}

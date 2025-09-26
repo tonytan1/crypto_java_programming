@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -24,15 +23,21 @@ public class DataInitializationService {
     @Autowired
     private SecurityRepository securityRepository;
     
-    @PostConstruct
     public void initializeSampleData() {
+        logger.info("=== DATA INITIALIZATION SERVICE STARTING ===");
         logger.info("Initializing sample data...");
         
-        // Check if data already exists
-        List<Security> existingSecurities = securityRepository.findAll();
-        if (!existingSecurities.isEmpty()) {
-            logger.info("Sample data exists, resetting");
-            securityRepository.deleteAll();
+        try {
+            // Check if data already exists
+            List<Security> existingSecurities = securityRepository.findAll();
+            logger.info("Found {} existing securities in database", existingSecurities.size());
+            if (!existingSecurities.isEmpty()) {
+                logger.info("Sample data exists, resetting");
+                securityRepository.deleteAll();
+            }
+        } catch (Exception e) {
+            logger.error("Error checking existing securities: {}", e.getMessage(), e);
+            return;
         }
         
         // Create sample stocks
@@ -70,22 +75,33 @@ public class DataInitializationService {
                 new BigDecimal("800.00"), LocalDate.of(2026, 2, 21), 
                 new BigDecimal("0.12"), new BigDecimal("0.35"));
         
-        // Save all securities
-        securityRepository.save(aaplStock);
-        securityRepository.save(telsaStock);
-        
-        // Save expired options
-        securityRepository.save(aaplCallExpired);
-        securityRepository.save(aaplPutExpired);
-        securityRepository.save(telsaCallExpired);
-        securityRepository.save(telsaPutExpired);
-        
-        // Save active options
-        securityRepository.save(aaplCallActive);
-        securityRepository.save(aaplPutActive);
-        securityRepository.save(telsaCallActive);
-        securityRepository.save(telsaPutActive);
-        
-        logger.info("Sample data initialization completed. Created {} securities (2 stocks, 4 expired options, 4 active options)", 10);
+        try {
+            // Save all securities
+            logger.info("Saving stocks...");
+            securityRepository.save(aaplStock);
+            securityRepository.save(telsaStock);
+            
+            // Save expired options
+            logger.info("Saving expired options...");
+            securityRepository.save(aaplCallExpired);
+            securityRepository.save(aaplPutExpired);
+            securityRepository.save(telsaCallExpired);
+            securityRepository.save(telsaPutExpired);
+            
+            // Save active options
+            logger.info("Saving active options...");
+            securityRepository.save(aaplCallActive);
+            securityRepository.save(aaplPutActive);
+            securityRepository.save(telsaCallActive);
+            securityRepository.save(telsaPutActive);
+            
+            // Verify data was saved
+            List<Security> savedSecurities = securityRepository.findAll();
+            logger.info("Sample data initialization completed. Created {} securities (2 stocks, 4 expired options, 4 active options)", savedSecurities.size());
+            logger.info("=== DATA INITIALIZATION SERVICE COMPLETED ===");
+            
+        } catch (Exception e) {
+            logger.error("Error saving securities: {}", e.getMessage(), e);
+        }
     }
 }

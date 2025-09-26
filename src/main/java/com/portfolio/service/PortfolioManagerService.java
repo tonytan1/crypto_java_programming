@@ -1,5 +1,7 @@
 package com.portfolio.service;
 
+import com.portfolio.event.EventPublisher;
+import com.portfolio.events.PortfolioEventProtos;
 import com.portfolio.model.Portfolio;
 import com.portfolio.model.Position;
 import org.slf4j.Logger;
@@ -35,6 +37,9 @@ public class PortfolioManagerService {
     @Autowired
     private MarketDataService marketDataService;
     
+    @Autowired
+    private EventPublisher eventPublisher;
+    
     // Thread-safe portfolio state using AtomicReference
     private final AtomicReference<Portfolio> portfolioRef = new AtomicReference<>();
     private ScheduledExecutorService scheduler;
@@ -65,21 +70,29 @@ public class PortfolioManagerService {
         // Calculate initial values
         portfolioCalculationService.calculatePortfolioValues(portfolio);
         
+        // Publish position added events for all initial positions
+        for (Position position : positions) {
+            eventPublisher.publishPositionUpdate(
+                position.getSymbol(),
+                BigDecimal.ZERO, // No previous size
+                position.getPositionSize(),
+                PortfolioEventProtos.UpdateAction.ADDED,
+                "Initial portfolio load"
+            );
+        }
+        
         // Set portfolio in atomic reference
         portfolioRef.set(portfolio);
         
-        // Initialize previous prices for change tracking
-        updatePreviousPrices(portfolio);
-        
         logger.info("Portfolio initialized with {} positions", portfolio.getPositionCount());
         
-        // Display initial summary with "new" indicators
+        // Display initial summary with "new" indicators (before setting previous prices)
         String separator = "=================================================================================";
-        String initialSummary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, previousPrices, previousOptionPrices);
-        System.out.println("\n" + separator);
-        System.out.println(initialSummary);
-        System.out.println(separator);
-        logger.info("Initial portfolio summary:\n{}", initialSummary);
+        String initialSummary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, previousPrices, previousOptionPrices, true);
+        logger.info("\n{}\n{}\n{}", separator, initialSummary, separator);
+        
+        // Initialize previous prices for change tracking AFTER displaying initial summary
+        updatePreviousPrices(portfolio);
     }
     
     /**
@@ -171,21 +184,18 @@ public class PortfolioManagerService {
         
         // Check if any prices have changed
         boolean hasChanges = checkForPriceChanges(portfolio);
+        logger.debug("Price change check result: hasChanges = {}", hasChanges);
         
         if (!hasChanges) {
             // No changes detected, skip display
+            logger.debug("No price changes detected, skipping portfolio summary display");
             return;
         }
         
         String separator = "=================================================================================";
         String summary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, previousPrices, previousOptionPrices);
         
-        // Display in console for immediate visibility
-        System.out.println("\n" + separator);
-        System.out.println(summary);
-        System.out.println(separator);
-        
-        // Also log it
+        // Log the portfolio summary
         logger.info("\n{}\n{}\n{}", separator, summary, separator);
         
         // Update previous prices for next comparison
@@ -216,6 +226,12 @@ public class PortfolioManagerService {
             String symbol = position.getSymbol();
             BigDecimal currentPrice = position.getCurrentPrice();
             
+            // Skip positions without security definitions
+            if (position.getSecurity() == null) {
+                logger.debug("Skipping position {} - no security definition for change check", symbol);
+                continue;
+            }
+            
             if (position.getSecurity().getType().name().equals("STOCK")) {
                 BigDecimal previousPrice = previousPrices.get(symbol);
                 if (previousPrice == null || currentPrice.compareTo(previousPrice) != 0) {
@@ -242,6 +258,12 @@ public class PortfolioManagerService {
         for (Position position : portfolio.getPositions()) {
             String symbol = position.getSymbol();
             BigDecimal currentPrice = position.getCurrentPrice();
+            
+            // Skip positions without security definitions
+            if (position.getSecurity() == null) {
+                logger.warn("Skipping position {} - no security definition", symbol);
+                continue;
+            }
             
             if (position.getSecurity().getType().name().equals("STOCK")) {
                 previousPrices.put(symbol, currentPrice);

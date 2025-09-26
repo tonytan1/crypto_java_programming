@@ -1,5 +1,6 @@
 package com.portfolio.service;
 
+import com.portfolio.event.EventPublisher;
 import com.portfolio.model.Position;
 import com.portfolio.model.Portfolio;
 import com.portfolio.model.Security;
@@ -27,6 +28,9 @@ public class PortfolioCalculationService {
     @Autowired
     private OptionPricingService optionPricingService;
     
+    @Autowired
+    private EventPublisher eventPublisher;
+    
     // ReadWriteLock for thread-safe portfolio operations
     // Read-heavy workload: multiple reads, fewer writes
     private final ReadWriteLock portfolioLock = new ReentrantReadWriteLock();
@@ -36,6 +40,8 @@ public class PortfolioCalculationService {
      * WRITE operation - requires exclusive access
      */
     public void calculatePortfolioValues(Portfolio portfolio) {
+        long startTime = System.currentTimeMillis();
+        
         portfolioLock.writeLock().lock();
         try {
             List<Position> positions = portfolio.getPositions();
@@ -46,6 +52,15 @@ public class PortfolioCalculationService {
             
             // Recalculate total NAV
             portfolio.calculateNAV();
+            
+            // Publish portfolio recalculation event
+            long calculationTime = System.currentTimeMillis() - startTime;
+            eventPublisher.publishPortfolioRecalculated(
+                portfolio.getTotalNAV(), 
+                portfolio.getPositionCount(), 
+                calculationTime
+            );
+            
         } finally {
             portfolioLock.writeLock().unlock();
         }
@@ -159,37 +174,55 @@ public class PortfolioCalculationService {
      * READ operation - multiple threads can access simultaneously
      */
     public String getPortfolioSummaryWithChanges(Portfolio portfolio, Map<String, BigDecimal> previousStockPrices, Map<String, BigDecimal> previousOptionPrices) {
+        return getPortfolioSummaryWithChanges(portfolio, previousStockPrices, previousOptionPrices, false);
+    }
+    
+    /**
+     * Gets a summary of the portfolio with change indicators
+     * READ operation - multiple threads can access simultaneously
+     * @param isInitial true for initial portfolio display, false for updates
+     */
+    public String getPortfolioSummaryWithChanges(Portfolio portfolio, Map<String, BigDecimal> previousStockPrices, Map<String, BigDecimal> previousOptionPrices, boolean isInitial) {
         portfolioLock.readLock().lock();
         try {
             StringBuilder summary = new StringBuilder();
-            summary.append("=== Portfolio Summary (Price Changes Detected) ===\n");
-            summary.append("Total Positions: ").append(portfolio.getPositionCount()).append("\n");
-            summary.append("Total NAV: $").append(portfolio.getTotalNAV().setScale(2, BigDecimal.ROUND_HALF_UP)).append("\n");
-            summary.append("Last Updated: ").append(portfolio.getLastUpdated()).append("\n");
             
-            // Count changes
-            int upCount = 0, downCount = 0, newCount = 0;
-            for (Position position : portfolio.getPositions()) {
-                String symbol = position.getSymbol();
-                BigDecimal currentPrice = position.getCurrentPrice();
-                BigDecimal previousPrice = null;
+            if (isInitial) {
+                summary.append("=== INITIAL PORTFOLIO SUMMARY ===\n");
+                summary.append("Total Positions: ").append(portfolio.getPositionCount()).append("\n");
+                summary.append("Total NAV: $").append(portfolio.getTotalNAV().setScale(2, BigDecimal.ROUND_HALF_UP)).append("\n");
+                summary.append("Initialized: ").append(portfolio.getLastUpdated()).append("\n");
+                summary.append("Status: All positions marked as NEW (first time display)\n\n");
+            } else {
+                summary.append("=== PORTFOLIO UPDATE (Price Changes Detected) ===\n");
+                summary.append("Total Positions: ").append(portfolio.getPositionCount()).append("\n");
+                summary.append("Total NAV: $").append(portfolio.getTotalNAV().setScale(2, BigDecimal.ROUND_HALF_UP)).append("\n");
+                summary.append("Last Updated: ").append(portfolio.getLastUpdated()).append("\n");
                 
-                if (position.getSecurity().getType().name().equals("STOCK")) {
-                    previousPrice = previousStockPrices.get(symbol);
-                } else {
-                    previousPrice = previousOptionPrices.get(symbol);
+                // Count changes
+                int upCount = 0, downCount = 0, newCount = 0;
+                for (Position position : portfolio.getPositions()) {
+                    String symbol = position.getSymbol();
+                    BigDecimal currentPrice = position.getCurrentPrice();
+                    BigDecimal previousPrice = null;
+                    
+                    if (position.getSecurity().getType().name().equals("STOCK")) {
+                        previousPrice = previousStockPrices.get(symbol);
+                    } else {
+                        previousPrice = previousOptionPrices.get(symbol);
+                    }
+                    
+                    if (previousPrice == null) {
+                        newCount++;
+                    } else {
+                        int comparison = currentPrice.compareTo(previousPrice);
+                        if (comparison > 0) upCount++;
+                        else if (comparison < 0) downCount++;
+                    }
                 }
                 
-                if (previousPrice == null) {
-                    newCount++;
-                } else {
-                    int comparison = currentPrice.compareTo(previousPrice);
-                    if (comparison > 0) upCount++;
-                    else if (comparison < 0) downCount++;
-                }
+                summary.append("Changes: ").append(upCount).append(" UP, ").append(downCount).append(" DOWN, ").append(newCount).append(" NEW\n\n");
             }
-            
-            summary.append("Changes: ").append(upCount).append(" UP, ").append(downCount).append(" DOWN, ").append(newCount).append(" NEW\n\n");
             
             summary.append("=== Position Details ===\n");
             for (Position position : portfolio.getPositions()) {
@@ -205,7 +238,10 @@ public class PortfolioCalculationService {
                     previousPrice = previousOptionPrices.get(symbol);
                 }
                 
-                if (previousPrice != null) {
+                if (isInitial) {
+                    // For initial display, all positions are NEW
+                    changeIndicator = " [NEW]";
+                } else if (previousPrice != null) {
                     int comparison = currentPrice.compareTo(previousPrice);
                     if (comparison > 0) {
                         BigDecimal change = currentPrice.subtract(previousPrice);

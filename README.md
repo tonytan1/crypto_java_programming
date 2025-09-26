@@ -211,15 +211,22 @@ The system will:
 
 ### Sample Output
 
-The application displays real-time portfolio updates in the console, showing:
+The application displays both initial portfolio setup and real-time updates in the console, showing:
 - Total portfolio NAV (Net Asset Value)
 - Individual position details with current prices
 - Real-time Black-Scholes option pricing
 - Market value calculations for each position
+- Clear distinction between initial and update displays
 
+#### Initial Portfolio Display
+![Initial Portfolio Screenshot](output_screenshot_initailize.png)
+
+*Initial portfolio summary showing all positions marked as NEW with their current values*
+
+#### Real-Time Updates
 ![Portfolio Output Screenshot](output_screenshot.png)
 
-*Real-time portfolio valuation showing active options with Black-Scholes pricing*
+*Real-time portfolio valuation showing active options with Black-Scholes pricing and price change indicators*
 
 ## Technical Details
 
@@ -267,80 +274,61 @@ Where:
 
 ## Protocol Buffers Integration
 
-### 🚀 **Protobuf Market Data Messages**
+### **Protobuf Market Data Messages**
 
-The system now includes **Protocol Buffers (Protobuf)** integration for efficient, structured data serialization and communication. This provides significant performance benefits and enables future scalability.
-
-#### **Protobuf Schema (`src/main/proto/market_data.proto`)**
+High-performance binary serialization for market data using Protocol Buffers:
 
 ```protobuf
 message MarketDataUpdate {
-  string ticker = 1;           // Security ticker symbol
-  double price = 2;            // Current price
-  int64 timestamp = 3;         // Unix timestamp in milliseconds
-  double volume = 4;           // Trading volume (optional)
-  string source = 5;           // Data source identifier
-  PriceChange price_change = 6; // Price change information
+  string ticker = 1;
+  double price = 2;
+  int64 timestamp = 3;
+  PriceChange price_change = 4;
 }
 
 message PriceChange {
-  double absolute_change = 1;  // Absolute price change
-  double percentage_change = 2; // Percentage change
-  ChangeDirection direction = 3; // Direction of change
+  double absolute_change = 1;
+  double percentage_change = 2;
+  ChangeDirection direction = 3;
 }
 
-enum ChangeDirection {
-  UP = 0;      // Price increased
-  DOWN = 1;    // Price decreased
-  SAME = 2;    // No change
-  NEW = 3;     // New price (first time)
-}
-
-message MarketDataSnapshot {
-  repeated MarketDataUpdate updates = 1;  // All price updates
-  int64 snapshot_time = 2;                // Snapshot timestamp
-  int32 total_securities = 3;             // Total number of securities
-}
+enum ChangeDirection { UP = 0; DOWN = 1; SAME = 2; NEW = 3; }
 ```
 
-#### **Key Features**
+**Key Benefits:**
+- **Performance**: 30-50% smaller than JSON, 3-10x faster serialization
+- **Type Safety**: Structured message definitions
+- **Real-time Ready**: Optimized for streaming market data
+- **Cross-platform**: Language-agnostic data exchange
 
-- **📦 Structured Data**: Type-safe message definitions for market data
-- **⚡ High Performance**: 30-50% smaller than JSON, 3-10x faster serialization
-- **🔄 Version Compatibility**: Schema evolution without breaking changes
-- **🎯 Real-time Ready**: Optimized for streaming market data updates
-- **🔍 Debug Support**: Human-readable logging and debugging utilities
-
-#### **Implementation Components**
-
-1. **`ProtobufUtils.java`**: Utility class for serialization/deserialization
-2. **`MarketDataService`**: Enhanced with Protobuf message creation
-3. **Generated Classes**: Auto-generated from `.proto` schema
-4. **Integration Tests**: Comprehensive test coverage
-
-#### **Usage Examples**
-
+**Usage:**
 ```java
-// Create market data snapshot
+// Create and serialize market data
 MarketDataSnapshot snapshot = marketDataService.createMarketDataSnapshot(previousPrices);
-
-// Serialize to byte array
 byte[] data = ProtobufUtils.serializeMarketDataSnapshot(snapshot);
-
-// Deserialize from byte array
-MarketDataSnapshot restored = ProtobufUtils.deserializeMarketDataSnapshot(data);
-
-// Human-readable format
-String readable = ProtobufUtils.toReadableString(snapshot);
 ```
 
-#### **Benefits for Portfolio System**
+## Event-Driven Architecture
 
-- **Real-time Streaming**: Efficient market data distribution
-- **API Integration**: Structured data for web/mobile clients
-- **Data Persistence**: Compact storage of historical data
-- **Microservices**: Inter-service communication
-- **External Systems**: Language-agnostic data exchange
+The system uses an **EventBus** pattern for real-time event streaming and decoupled communication:
+
+### **EventBus Design**
+- **Central Event Hub**: Manages event publishing and subscription
+- **Thread-Safe**: Uses `ConcurrentHashMap` for listener management
+- **Asynchronous**: Non-blocking event distribution
+- **Protobuf Events**: Structured event messages using Protocol Buffers
+
+### **ConsoleEventListener**
+- **Event Subscriber**: Listens to portfolio and market data events
+- **Smart Logging**: Different log levels for different event types
+- **Real-time Display**: Shows portfolio updates only when prices change
+- **Performance Optimized**: Debug-level logging for detailed events, INFO for portfolio summaries
+
+### **Event Types**
+- `MARKET_DATA_UPDATE`: Stock price changes
+- `PORTFOLIO_RECALCULATED`: Portfolio NAV updates
+- `POSITION_UPDATE`: Position additions/modifications
+- `SYSTEM_STARTED/STOPPED`: Application lifecycle events
 
 ## Database Schema
 
@@ -413,6 +401,8 @@ The system provides real-time console output showing:
 - **Embedded Database**: No external database dependencies, for simplicity and performance concern, use jdbc template instead of MyBatis-Spring integration.
 - **Limited Dependencies**: Only specified third-party libraries allowed
 - **Memory Safety**: AtomicLong + LCG eliminates ThreadLocal memory leak risks
+- **Independent Random Generation**: Each stock has its own random number generator to avoid correlation
+- **Random Number Fix**: Fixed "3 UP, 3 DOWN" pattern by giving each stock independent random seeds
 
 ## Testing
 
@@ -424,7 +414,3 @@ Run tests using:
 ## License
 
 This project is part of a programming challenge and is for educational purposes.
-
-## Contact
-
-For questions about this implementation, please refer to the original requirements document.

@@ -1,5 +1,6 @@
 package com.portfolio.service;
 
+import com.portfolio.event.EventPublisher;
 import com.portfolio.marketdata.MarketDataProtos;
 import com.portfolio.model.Security;
 import com.portfolio.model.SecurityType;
@@ -11,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
@@ -32,6 +32,9 @@ public class MarketDataService {
     @Autowired
     private SecurityRepository securityRepository;
     
+    @Autowired
+    private EventPublisher eventPublisher;
+    
     @Value("${portfolio.marketdata.update-interval-min:500}")
     private long minUpdateInterval;
     
@@ -41,10 +44,9 @@ public class MarketDataService {
     private final Map<String, BigDecimal> currentPrices = new ConcurrentHashMap<>();
     private final Map<String, BigDecimal> initialPrices = new ConcurrentHashMap<>();
     
-    // Thread-safe random number generation using AtomicLong + LCG
-    private final AtomicLong randomSeed = new AtomicLong(System.nanoTime());
+    // Independent random number generators for each stock to avoid correlation
+    private final Map<String, AtomicLong> randomSeeds = new ConcurrentHashMap<>();
     
-    @PostConstruct
     public void initializePrices() {
         logger.info("Initializing market data service...");
         List<Security> stocks = securityRepository.findByType(SecurityType.STOCK);
@@ -54,6 +56,10 @@ public class MarketDataService {
             BigDecimal initialPrice = getInitialPrice(stock.getTicker());
             initialPrices.put(stock.getTicker(), initialPrice);
             currentPrices.put(stock.getTicker(), initialPrice);
+            
+            // Initialize independent random seed for each stock
+            randomSeeds.put(stock.getTicker(), new AtomicLong(System.nanoTime() + stock.getTicker().hashCode()));
+            
             logger.info("Initialized {} with price: ${}", stock.getTicker(), initialPrice);
         }
         
@@ -82,52 +88,66 @@ public class MarketDataService {
         if (currentPrice == null || currentPrice.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
         }
-        
+
+        // Store previous price for event publishing
+        BigDecimal previousPrice = currentPrice;
+
         // Geometric Brownian motion parameters
         BigDecimal mu = stock.getMu(); // Expected return
         BigDecimal sigma = stock.getSigma(); // Volatility
-        
+
         // Random time interval between 0.5-2 seconds (converted to years)
-        double deltaT = (minUpdateInterval + generateUniformRandom() * (maxUpdateInterval - minUpdateInterval)) / 1000.0 / 365.0;
-        
+        double deltaT = (minUpdateInterval + generateUniformRandom(ticker) * (maxUpdateInterval - minUpdateInterval)) / 1000.0 / 365.0;
+
         // Generate random normal variable (Box-Muller transformation)
-        double epsilon = generateNormalRandom();
-        
+        double epsilon = generateNormalRandom(ticker);
+
         // Calculate price change: deltaS = mu * S * deltaT + sigma * S * sqrt(deltaT) * epsilon
         BigDecimal muTerm = mu.multiply(currentPrice).multiply(new BigDecimal(deltaT));
         BigDecimal sigmaTerm = sigma.multiply(currentPrice)
                 .multiply(new BigDecimal(Math.sqrt(deltaT)))
                 .multiply(new BigDecimal(epsilon));
-        
+
         BigDecimal deltaS = muTerm.add(sigmaTerm);
         BigDecimal newPrice = currentPrice.add(deltaS);
-        
+
         // Ensure price never goes below zero
         if (newPrice.compareTo(BigDecimal.ZERO) < 0) {
             newPrice = BigDecimal.ZERO;
         }
-        
+
+        // Update price
         currentPrices.put(ticker, newPrice);
+        
+        // Publish market data update event
+        eventPublisher.publishMarketDataUpdate(ticker, newPrice, previousPrice);
+        
         return newPrice;
     }
     
     /**
      * Generates a uniform random number in range [0, 1) using Linear Congruential Generator
-     * Thread-safe implementation using AtomicLong
+     * Thread-safe implementation using AtomicLong for a specific ticker
      */
-    private double generateUniformRandom() {
-        long seed = randomSeed.updateAndGet(s -> (s * 1103515245L + 12345L) & 0x7fffffffL);
-        return seed / (double) 0x80000000L;
+    private double generateUniformRandom(String ticker) {
+        AtomicLong seed = randomSeeds.get(ticker);
+        if (seed == null) {
+            // Fallback: create a new seed if ticker not found
+            seed = new AtomicLong(System.nanoTime() + ticker.hashCode());
+            randomSeeds.put(ticker, seed);
+        }
+        long nextSeed = seed.updateAndGet(s -> (s * 1103515245L + 12345L) & 0x7fffffffL);
+        return nextSeed / (double) 0x80000000L;
     }
     
     /**
      * Generates a random number from standard normal distribution using Box-Muller transformation
-     * Thread-safe implementation using AtomicLong + LCG
+     * Thread-safe implementation using AtomicLong + LCG for a specific ticker
      */
-    private double generateNormalRandom() {
+    private double generateNormalRandom(String ticker) {
         // Generate two uniform random numbers using thread-safe LCG
-        double u1 = generateUniformRandom();
-        double u2 = generateUniformRandom();
+        double u1 = generateUniformRandom(ticker);
+        double u2 = generateUniformRandom(ticker);
         
         // Box-Muller transformation
         double z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);

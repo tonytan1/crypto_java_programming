@@ -7,8 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,8 +16,6 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Basic integration test for the Portfolio Application
  */
-@Configuration
-@ComponentScan(basePackages = "com.portfolio")
 public class PortfolioApplicationTest {
     
     private ApplicationContext context;
@@ -28,7 +24,7 @@ public class PortfolioApplicationTest {
     @BeforeEach
     public void setUp() {
         // Create a fresh Spring context for each test
-        context = new AnnotationConfigApplicationContext(PortfolioApplicationTest.class);
+        context = new AnnotationConfigApplicationContext(PortfolioApplication.class);
         portfolioManagerService = context.getBean(PortfolioManagerService.class);
     }
     
