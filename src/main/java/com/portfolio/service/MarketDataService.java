@@ -15,8 +15,8 @@ import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Service for simulating market data using geometric Brownian motion.
@@ -37,8 +37,10 @@ public class MarketDataService {
     private long maxUpdateInterval;
     
     private final Map<String, BigDecimal> currentPrices = new ConcurrentHashMap<>();
-    private final Map<String, BigDecimal> initialPrices = new HashMap<>();
-    private final Random random = new Random();
+    private final Map<String, BigDecimal> initialPrices = new ConcurrentHashMap<>();
+    
+    // Thread-safe random number generation using AtomicLong + LCG
+    private final AtomicLong randomSeed = new AtomicLong(System.nanoTime());
     
     @PostConstruct
     public void initializePrices() {
@@ -84,7 +86,7 @@ public class MarketDataService {
         BigDecimal sigma = stock.getSigma(); // Volatility
         
         // Random time interval between 0.5-2 seconds (converted to years)
-        double deltaT = (minUpdateInterval + random.nextDouble() * (maxUpdateInterval - minUpdateInterval)) / 1000.0 / 365.0;
+        double deltaT = (minUpdateInterval + generateUniformRandom() * (maxUpdateInterval - minUpdateInterval)) / 1000.0 / 365.0;
         
         // Generate random normal variable (Box-Muller transformation)
         double epsilon = generateNormalRandom();
@@ -108,13 +110,24 @@ public class MarketDataService {
     }
     
     /**
+     * Generates a uniform random number in range [0, 1) using Linear Congruential Generator
+     * Thread-safe implementation using AtomicLong
+     */
+    private double generateUniformRandom() {
+        long seed = randomSeed.updateAndGet(s -> (s * 1103515245L + 12345L) & 0x7fffffffL);
+        return seed / (double) 0x80000000L;
+    }
+    
+    /**
      * Generates a random number from standard normal distribution using Box-Muller transformation
+     * Thread-safe implementation using AtomicLong + LCG
      */
     private double generateNormalRandom() {
-        // Box-Muller transformation
-        double u1 = random.nextDouble();
-        double u2 = random.nextDouble();
+        // Generate two uniform random numbers using thread-safe LCG
+        double u1 = generateUniformRandom();
+        double u2 = generateUniformRandom();
         
+        // Box-Muller transformation
         double z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
         return z0;
     }
