@@ -72,8 +72,9 @@ crypto_java_programming/
 ```
 CSV Positions → Position Loader → Portfolio Calculator
 Security Database → Security Definitions → Option Pricing Engine
-Market Data Provider → Stock Prices → Portfolio Calculator
-Portfolio Calculator → Market Values & NAV → Result Subscriber
+Market Data Provider → Event Bus → Console Display
+Portfolio Calculator → Event Bus → Console Display
+Event Bus → Real-time Event Streaming → Multiple Subscribers
 ```
 
 ## Requirements
