@@ -34,7 +34,9 @@ public class Portfolio {
     
     public void setPositions(List<Position> positions) {
         this.positions = positions != null ? new ArrayList<>(positions) : new ArrayList<>();
-        calculateNAV();
+        if (this.positions != null) {
+            calculateNAV();
+        }
     }
     
     public BigDecimal getTotalNAV() {
@@ -77,9 +79,13 @@ public class Portfolio {
      * Calculates the Net Asset Value (NAV) as the sum of all position market values
      */
     public BigDecimal calculateNAV() {
-        totalNAV = positions.stream()
-                .map(Position::calculateMarketValue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (positions == null) {
+            totalNAV = BigDecimal.ZERO;
+        } else {
+            totalNAV = positions.stream()
+                    .map(Position::calculateMarketValue)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
         
         lastUpdated = LocalDateTime.now();
         return totalNAV;
@@ -89,22 +95,25 @@ public class Portfolio {
      * Gets the number of positions in the portfolio
      */
     public int getPositionCount() {
-        return positions.size();
+        return positions != null ? positions.size() : 0;
     }
     
     /**
      * Checks if the portfolio is empty
      */
     public boolean isEmpty() {
-        return positions.isEmpty();
+        return positions == null || positions.isEmpty();
     }
     
     /**
      * Gets a position by symbol
      */
     public Position getPositionBySymbol(String symbol) {
+        if (positions == null) {
+            return null;
+        }
         return positions.stream()
-                .filter(p -> p.getSymbol().equals(symbol))
+                .filter(p -> p != null && p.getSymbol() != null && p.getSymbol().equals(symbol))
                 .findFirst()
                 .orElse(null);
     }
