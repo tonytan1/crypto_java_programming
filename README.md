@@ -85,7 +85,7 @@ Portfolio Calculator → Market Values & NAV → Result Subscriber
 
 ## Installation
 
-### Quick Setup (Windows)
+### Quick Setup (Windows - I used windows to test)
 
 1. **Clone the repository**
    ```bash
@@ -140,7 +140,7 @@ This project is fully cross-platform and works on Windows, macOS, and Linux syst
 | **Windows** | `.\gradlew.bat build` | `.\gradlew.bat run` | Uses batch files |
 | **macOS/Linux** | `./gradlew build` | `./gradlew run` | Uses shell scripts |
 
-### macOS/Linux Setup
+### macOS/Linux Setup (pending to test)
 
 1. **Make scripts executable** (first time only)
    ```bash
@@ -289,7 +289,7 @@ The system provides real-time console output showing:
 
 - **Thread Safety**: Market data provider runs in separate thread
 - **Mock Data**: No real market data integration required
-- **Embedded Database**: No external database dependencies
+- **Embedded Database**: No external database dependencies, for simplicity and performance concern, use jdbc template instead of MyBatis-Spring integration.
 - **Limited Dependencies**: Only specified third-party libraries allowed
 
 ## Testing
