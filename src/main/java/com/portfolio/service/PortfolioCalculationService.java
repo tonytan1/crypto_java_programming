@@ -234,7 +234,7 @@ public class PortfolioCalculationService {
                 if (isInitial) {
                     // For initial display, all positions are NEW
                     changeIndicator = " [NEW]";
-                } else if (previousPrice != null) {
+                } else if (previousPrice != null && previousPrice.compareTo(BigDecimal.ZERO) != 0) {
                     int comparison = currentPrice.compareTo(previousPrice);
                     if (comparison > 0) {
                         BigDecimal change = currentPrice.subtract(previousPrice);
@@ -247,6 +247,9 @@ public class PortfolioCalculationService {
                     } else {
                         changeIndicator = " [SAME]"; // No change (shouldn't happen with our logic)
                     }
+                } else if (previousPrice != null && previousPrice.compareTo(BigDecimal.ZERO) == 0) {
+                    // Handle case where previous price was zero (from zero to non-zero)
+                    changeIndicator = String.format(" [UP +$%.2f (NEW)]", currentPrice);
                 } else {
                     changeIndicator = " [NEW]"; // New price (first time)
                 }

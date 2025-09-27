@@ -17,32 +17,16 @@ public class ConsoleEventListener implements PortfolioEventListener {
     
     @Override
     public void onEvent(PortfolioEventProtos.PortfolioEvent event) {
+        // Use Switch Expression for cleaner event handling
         switch (event.getType()) {
-            case MARKET_DATA_UPDATE:
-                handleMarketDataUpdate(event);
-                break;
-            case PORTFOLIO_RECALCULATED:
-                handlePortfolioRecalculated(event);
-                break;
-            case POSITION_ADDED:
-            case POSITION_REMOVED:
-            case POSITION_UPDATED:
-                handlePositionUpdate(event);
-                break;
-            case SYSTEM_STARTED:
-                handleSystemStarted(event);
-                break;
-            case SYSTEM_STOPPED:
-                handleSystemStopped(event);
-                break;
-            case ERROR_OCCURRED:
-                handleError(event);
-                break;
-            case PERFORMANCE_METRIC:
-                handlePerformanceMetric(event);
-                break;
-            default:
-                logger.debug("Unhandled event type: {}", event.getType());
+            case MARKET_DATA_UPDATE -> handleMarketDataUpdate(event);
+            case PORTFOLIO_RECALCULATED -> handlePortfolioRecalculated(event);
+            case POSITION_ADDED, POSITION_REMOVED, POSITION_UPDATED -> handlePositionUpdate(event);
+            case SYSTEM_STARTED -> handleSystemStarted(event);
+            case SYSTEM_STOPPED -> handleSystemStopped(event);
+            case ERROR_OCCURRED -> handleError(event);
+            case PERFORMANCE_METRIC -> handlePerformanceMetric(event);
+            default -> logger.debug("Unhandled event type: {}", event.getType());
         }
     }
     

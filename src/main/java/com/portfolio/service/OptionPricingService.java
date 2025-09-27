@@ -40,7 +40,11 @@ public class OptionPricingService {
                 return BigDecimal.ZERO;
             }
             
-            if (option.getType() == SecurityType.STOCK) {
+            // Use Switch Expression for cleaner type checking
+            if (!switch (option.getType()) {
+                case STOCK -> false;
+                case CALL, PUT -> true;
+            }) {
                 logger.warn("Cannot calculate option price for stock: {}", option.getTicker());
                 return BigDecimal.ZERO;
             }
@@ -70,13 +74,12 @@ public class OptionPricingService {
             BigDecimal d1 = calculateD1(underlyingPrice, strike, riskFreeRate, volatility, timeToMaturity);
             BigDecimal d2 = calculateD2(d1, volatility, timeToMaturity);
             
-            if (option.getType() == SecurityType.CALL) {
-                return calculateCallPrice(underlyingPrice, strike, riskFreeRate, timeToMaturity, d1, d2);
-            } else if (option.getType() == SecurityType.PUT) {
-                return calculatePutPrice(underlyingPrice, strike, riskFreeRate, timeToMaturity, d1, d2);
-            }
-            
-            return BigDecimal.ZERO;
+            // Use Switch Expression for cleaner option type handling
+            return switch (option.getType()) {
+                case CALL -> calculateCallPrice(underlyingPrice, strike, riskFreeRate, timeToMaturity, d1, d2);
+                case PUT -> calculatePutPrice(underlyingPrice, strike, riskFreeRate, timeToMaturity, d1, d2);
+                case STOCK -> BigDecimal.ZERO; // This should never happen due to earlier validation
+            };
             
         } catch (Exception e) {
             logger.error("Error calculating option price for {}: {}", option != null ? option.getTicker() : "null", e.getMessage(), e);
@@ -160,21 +163,23 @@ public class OptionPricingService {
     }
     
     /**
-     * Calculates the intrinsic value of an option at maturity
+     * Calculates the intrinsic value of an option at maturity using Switch Expression
      * For calls: max(0, S - K)
      * For puts: max(0, K - S)
      */
     private BigDecimal calculateIntrinsicValue(Security option, BigDecimal underlyingPrice) {
         BigDecimal strike = option.getStrike();
         
-        if (option.getType() == SecurityType.CALL) {
-            BigDecimal intrinsicValue = underlyingPrice.subtract(strike);
-            return intrinsicValue.compareTo(BigDecimal.ZERO) > 0 ? intrinsicValue : BigDecimal.ZERO;
-        } else if (option.getType() == SecurityType.PUT) {
-            BigDecimal intrinsicValue = strike.subtract(underlyingPrice);
-            return intrinsicValue.compareTo(BigDecimal.ZERO) > 0 ? intrinsicValue : BigDecimal.ZERO;
-        }
-        
-        return BigDecimal.ZERO;
+        return switch (option.getType()) {
+            case CALL -> {
+                BigDecimal intrinsicValue = underlyingPrice.subtract(strike);
+                yield intrinsicValue.compareTo(BigDecimal.ZERO) > 0 ? intrinsicValue : BigDecimal.ZERO;
+            }
+            case PUT -> {
+                BigDecimal intrinsicValue = strike.subtract(underlyingPrice);
+                yield intrinsicValue.compareTo(BigDecimal.ZERO) > 0 ? intrinsicValue : BigDecimal.ZERO;
+            }
+            case STOCK -> BigDecimal.ZERO; // Stocks don't have intrinsic value in this context
+        };
     }
 }
