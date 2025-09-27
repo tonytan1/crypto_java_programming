@@ -43,7 +43,6 @@ public class MarketDataService {
     private final Map<String, BigDecimal> currentPrices = new ConcurrentHashMap<>();
     private final Map<String, BigDecimal> initialPrices = new ConcurrentHashMap<>();
     
-    // Independent random number generators for each stock to avoid correlation
     private final Map<String, AtomicLong> randomSeeds = new ConcurrentHashMap<>();
     
     public void initializePrices() {
@@ -51,12 +50,9 @@ public class MarketDataService {
         List<Security> stocks = securityRepository.findByType(SecurityType.STOCK);
         
         for (Security stock : stocks) {
-            // Set initial prices (you can customize these)
             BigDecimal initialPrice = getInitialPrice(stock.getTicker());
             initialPrices.put(stock.getTicker(), initialPrice);
             currentPrices.put(stock.getTicker(), initialPrice);
-            
-            // Initialize independent random seed for each stock
             randomSeeds.put(stock.getTicker(), new AtomicLong(System.nanoTime() + stock.getTicker().hashCode()));
             
             logger.info("Initialized {} with price: ${}", stock.getTicker(), initialPrice);
@@ -65,16 +61,10 @@ public class MarketDataService {
         logger.info("Market data service initialized with {} stocks", stocks.size());
     }
     
-    /**
-     * Gets the current price of a security
-     */
     public BigDecimal getCurrentPrice(String ticker) {
         return currentPrices.getOrDefault(ticker, BigDecimal.ZERO);
     }
     
-    /**
-     * Gets all current prices
-     */
     public Map<String, BigDecimal> getAllCurrentPrices() {
         return new HashMap<>(currentPrices);
     }
@@ -88,7 +78,6 @@ public class MarketDataService {
             return BigDecimal.ZERO;
         }
 
-        // Store previous price for event publishing
         BigDecimal previousPrice = currentPrice;
 
         // Geometric Brownian motion parameters
@@ -110,15 +99,11 @@ public class MarketDataService {
         BigDecimal deltaS = muTerm.add(sigmaTerm);
         BigDecimal newPrice = currentPrice.add(deltaS);
 
-        // Ensure price never goes below zero
         if (newPrice.compareTo(BigDecimal.ZERO) < 0) {
             newPrice = BigDecimal.ZERO;
         }
 
-        // Update price
         currentPrices.put(ticker, newPrice);
-        
-        // Publish market data update event
         eventPublisher.publishMarketDataUpdate(ticker, newPrice, previousPrice);
         
         return newPrice;
@@ -131,7 +116,6 @@ public class MarketDataService {
     private double generateUniformRandom(String ticker) {
         AtomicLong seed = randomSeeds.get(ticker);
         if (seed == null) {
-            // Fallback: create a new seed if ticker not found
             seed = new AtomicLong(System.nanoTime() + ticker.hashCode());
             randomSeeds.put(ticker, seed);
         }

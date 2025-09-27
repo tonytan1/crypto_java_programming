@@ -38,7 +38,6 @@ public class OptionPricingService {
         LocalDate maturity = option.getMaturity();
         LocalDate today = LocalDate.now();
         
-        // Calculate time to maturity in years
         long daysToMaturity = ChronoUnit.DAYS.between(today, maturity);
         if (daysToMaturity <= 0) {
             return BigDecimal.ZERO; // Option has expired
@@ -46,11 +45,8 @@ public class OptionPricingService {
         
         BigDecimal timeToMaturity = new BigDecimal(daysToMaturity).divide(new BigDecimal(365), SCALE, RoundingMode.HALF_UP);
         
-        // Calculate d1 and d2
         BigDecimal d1 = calculateD1(underlyingPrice, strike, riskFreeRate, volatility, timeToMaturity);
         BigDecimal d2 = calculateD2(d1, volatility, timeToMaturity);
-        
-        // Calculate option price based on type
         if (option.getType() == SecurityType.CALL) {
             return calculateCallPrice(underlyingPrice, strike, riskFreeRate, timeToMaturity, d1, d2);
         } else if (option.getType() == SecurityType.PUT) {

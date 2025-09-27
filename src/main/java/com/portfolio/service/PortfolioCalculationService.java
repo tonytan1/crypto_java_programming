@@ -50,10 +50,7 @@ public class PortfolioCalculationService {
                 calculatePositionValue(position);
             }
             
-            // Recalculate total NAV
             portfolio.calculateNAV();
-            
-            // Publish portfolio recalculation event
             long calculationTime = System.currentTimeMillis() - startTime;
             eventPublisher.publishPortfolioRecalculated(
                 portfolio.getTotalNAV(), 
@@ -83,10 +80,8 @@ public class PortfolioCalculationService {
             BigDecimal currentPrice;
             
             if (security.getType() == SecurityType.STOCK) {
-                // For stocks, get current market price
                 currentPrice = marketDataService.getCurrentPrice(security.getTicker());
             } else {
-                // For options, calculate theoretical price
                 String underlyingTicker = extractUnderlyingTicker(security.getTicker());
                 BigDecimal underlyingPrice = marketDataService.getCurrentPrice(underlyingTicker);
                 
@@ -109,13 +104,11 @@ public class PortfolioCalculationService {
      * Example: "AAPL-OCT-2020-110-C" -> "AAPL"
      */
     private String extractUnderlyingTicker(String optionTicker) {
-        // Option tickers typically follow pattern: STOCK-EXPIRY-STRIKE-TYPE
-        // We need to extract the stock part before the first dash
         int firstDashIndex = optionTicker.indexOf('-');
         if (firstDashIndex > 0) {
             return optionTicker.substring(0, firstDashIndex);
         }
-        return optionTicker; // Fallback to original if no dash found
+        return optionTicker;
     }
     
     /**

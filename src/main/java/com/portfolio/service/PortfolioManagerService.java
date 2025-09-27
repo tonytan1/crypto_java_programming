@@ -44,8 +44,6 @@ public class PortfolioManagerService {
     private final AtomicReference<Portfolio> portfolioRef = new AtomicReference<>();
     private ScheduledExecutorService scheduler;
     private boolean isRunning = false;
-    
-    // Price change tracking for smart display
     private final Map<String, BigDecimal> previousPrices = new HashMap<>();
     private final Map<String, BigDecimal> previousOptionPrices = new HashMap<>();
     
@@ -55,49 +53,34 @@ public class PortfolioManagerService {
     public void initializePortfolio() throws IOException {
         logger.info("Initializing portfolio...");
         
-        // Load positions from CSV
         List<Position> positions = positionLoaderService.loadPositions();
-        
-        // Validate positions
         List<String> missingSecurities = positionLoaderService.validatePositions(positions);
         if (!missingSecurities.isEmpty()) {
             logger.warn("Missing security definitions for: {}", missingSecurities);
         }
         
-        // Create portfolio
         Portfolio portfolio = new Portfolio(positions);
-        
-        // Calculate initial values
         portfolioCalculationService.calculatePortfolioValues(portfolio);
-        
-        // Publish position added events for all initial positions
         for (Position position : positions) {
             eventPublisher.publishPositionUpdate(
                 position.getSymbol(),
-                BigDecimal.ZERO, // No previous size
+                BigDecimal.ZERO,
                 position.getPositionSize(),
                 PortfolioEventProtos.UpdateAction.ADDED,
                 "Initial portfolio load"
             );
         }
         
-        // Set portfolio in atomic reference
         portfolioRef.set(portfolio);
-        
         logger.info("Portfolio initialized with {} positions", portfolio.getPositionCount());
         
         // Display initial summary with "new" indicators (before setting previous prices)
         String separator = "=================================================================================";
         String initialSummary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, previousPrices, previousOptionPrices, true);
         logger.info("\n{}\n{}\n{}", separator, initialSummary, separator);
-        
-        // Initialize previous prices for change tracking AFTER displaying initial summary
         updatePreviousPrices(portfolio);
     }
     
-    /**
-     * Starts the real-time portfolio monitoring
-     */
     public void startRealTimeMonitoring() {
         if (isRunning) {
             logger.info("Portfolio monitoring is already running");
@@ -112,10 +95,8 @@ public class PortfolioManagerService {
         logger.info("Starting real-time portfolio monitoring...");
         isRunning = true;
         
-        // Create scheduler for periodic updates
         scheduler = Executors.newScheduledThreadPool(2);
         
-        // Schedule market data updates and portfolio recalculation
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 updatePortfolio();
@@ -123,8 +104,6 @@ public class PortfolioManagerService {
                 logger.error("Error updating portfolio: {}", e.getMessage(), e);
             }
         }, 0, 1, TimeUnit.SECONDS);
-        
-        // Schedule portfolio summary display
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 displayPortfolioSummary();
@@ -134,9 +113,6 @@ public class PortfolioManagerService {
         }, 2, 5, TimeUnit.SECONDS);
     }
     
-    /**
-     * Stops the real-time monitoring
-     */
     public void stopRealTimeMonitoring() {
         if (!isRunning) {
             logger.info("Portfolio monitoring is not running");
@@ -172,9 +148,6 @@ public class PortfolioManagerService {
             }
         }
     
-    /**
-     * Displays the current portfolio summary only when prices change
-     */
     private void displayPortfolioSummary() {
         Portfolio portfolio = portfolioRef.get();
         if (portfolio == null) {
