@@ -126,7 +126,7 @@ Event Bus → Real-time Event Streaming → Multiple Subscribers
 
 ### Manual Setup
 
-1. **Ensure JDK 1.8+ is installed**
+1. **Ensure JDK 17+ is installed**
    ```bash
    java -version
    ```
@@ -171,7 +171,7 @@ This project is fully cross-platform and works on Windows, macOS, and Linux syst
 
 ### Cross-Platform Features
 
-- ✅ **Java 8+ compatibility** - Works on all platforms
+- ✅ **Java 17+ compatibility** - Modern Java features and performance
 - ✅ **Gradle wrapper** - Includes both `gradlew` and `gradlew.bat`
 - ✅ **H2 database** - Embedded database works everywhere
 - ✅ **Spring Framework** - Cross-platform dependency injection

@@ -1,0 +1,63 @@
+# ============================================================================
+# Portfolio Application Configuration
+# ============================================================================
+# This file contains all application configuration in YAML format
+# YAML is more readable and expressive than properties files
+
+portfolio:
+  marketdata:
+    # Price update intervals (in milliseconds)
+    update-interval-min: 500
+    update-interval-max: 2000
+    
+    # Initial stock prices configuration
+    # Add new stocks by adding their ticker and initial price
+    initial-prices:
+      AAPL: "200.00"
+      TELSA: "900.00"
+      # Example additional stocks (uncomment to use):
+      # GOOGL: "2800.00"
+      # MSFT: "400.00"
+      # AMZN: "3500.00"
+
+# ============================================================================
+# Spring Framework Configuration
+# ============================================================================
+spring:
+  # Database Configuration
+  datasource:
+    url: jdbc:h2:mem:portfolio
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  
+  # H2 Database Console (for development and debugging)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  # JPA/Hibernate Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: none  # We use schema.sql for DDL
+    show-sql: false   # Set to true for SQL debugging
+
+# ============================================================================
+# Logging Configuration
+# ============================================================================
+logging:
+  level:
+    # Application logging
+    com.portfolio: INFO
+    
+    # Hibernate logging (set to DEBUG for SQL debugging)
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    
+    # Spring framework logging
+    org.springframework: WARN
+    
+    # Root logger
+    root: INFO

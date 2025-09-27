@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Map;
 
 /**
@@ -27,7 +28,7 @@ public class EventPublisher {
         
         if (previousPrice != null && previousPrice.compareTo(BigDecimal.ZERO) != 0) {
             BigDecimal absoluteChange = currentPrice.subtract(previousPrice);
-            BigDecimal percentageChange = absoluteChange.divide(previousPrice, 6, BigDecimal.ROUND_HALF_UP)
+            BigDecimal percentageChange = absoluteChange.divide(previousPrice, 6, RoundingMode.HALF_UP)
                 .multiply(new BigDecimal("100"));
             
             marketDataBuilder

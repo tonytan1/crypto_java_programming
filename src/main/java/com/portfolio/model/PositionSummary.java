@@ -45,10 +45,10 @@ public record PositionSummary(
             Last Updated: %s
             """.formatted(
                 symbol,
-                currentPrice.setScale(2, java.math.RoundingMode.HALF_UP),
-                marketValue.setScale(2, java.math.RoundingMode.HALF_UP),
-                priceChange.setScale(2, java.math.RoundingMode.HALF_UP),
-                percentageChange.setScale(2, java.math.RoundingMode.HALF_UP),
+                currentPrice.setScale(2, java.math.RoundingMode.DOWN),
+                marketValue.setScale(2, java.math.RoundingMode.DOWN),
+                priceChange.setScale(2, java.math.RoundingMode.DOWN),
+                percentageChange.setScale(2, java.math.RoundingMode.DOWN),
                 lastUpdated
             );
     }

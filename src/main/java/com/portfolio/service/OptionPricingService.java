@@ -30,27 +30,8 @@ public class OptionPricingService {
      */
     public BigDecimal calculateOptionPrice(Security option, BigDecimal underlyingPrice) {
         try {
-            // Input validation
-            if (option == null) {
-                logger.warn("Option cannot be null");
-                return BigDecimal.ZERO;
-            }
-            if (underlyingPrice == null || underlyingPrice.compareTo(BigDecimal.ZERO) <= 0) {
-                logger.warn("Underlying price must be positive, got: {}", underlyingPrice);
-                return BigDecimal.ZERO;
-            }
-            
-            // Use Switch Expression for cleaner type checking
-            if (!switch (option.getType()) {
-                case STOCK -> false;
-                case CALL, PUT -> true;
-            }) {
-                logger.warn("Cannot calculate option price for stock: {}", option.getTicker());
-                return BigDecimal.ZERO;
-            }
-            
-            if (option.getStrike() == null || option.getMaturity() == null) {
-                logger.warn("Option must have strike price and maturity date: {}", option.getTicker());
+            // Validate inputs
+            if (!validateOptionInputs(option, underlyingPrice)) {
                 return BigDecimal.ZERO;
             }
             
@@ -85,6 +66,43 @@ public class OptionPricingService {
             logger.error("Error calculating option price for {}: {}", option != null ? option.getTicker() : "null", e.getMessage(), e);
             return BigDecimal.ZERO; // Return safe default instead of throwing
         }
+    }
+    
+    /**
+     * Validates option pricing inputs using Java 17 Switch Expressions
+     * @param option the security option to validate
+     * @param underlyingPrice the underlying asset price
+     * @return true if validation passes, false otherwise
+     */
+    private boolean validateOptionInputs(Security option, BigDecimal underlyingPrice) {
+        // Check for null option
+        if (option == null) {
+            logger.warn("Option cannot be null");
+            return false;
+        }
+        
+        // Check for valid underlying price
+        if (underlyingPrice == null || underlyingPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            logger.warn("Underlying price must be positive, got: {}", underlyingPrice);
+            return false;
+        }
+        
+        // Use Switch Expression for cleaner type checking
+        if (!switch (option.getType()) {
+            case STOCK -> false;
+            case CALL, PUT -> true;
+        }) {
+            logger.warn("Cannot calculate option price for stock: {}", option.getTicker());
+            return false;
+        }
+        
+        // Check for required option parameters
+        if (option.getStrike() == null || option.getMaturity() == null) {
+            logger.warn("Option must have strike price and maturity date: {}", option.getTicker());
+            return false;
+        }
+        
+        return true;
     }
     
     /**

@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -44,8 +45,8 @@ public class PortfolioManagerService {
     private final AtomicReference<Portfolio> portfolioRef = new AtomicReference<>();
     private ScheduledExecutorService scheduler;
     private boolean isRunning = false;
-    private final Map<String, BigDecimal> previousPrices = new HashMap<>();
-    private final Map<String, BigDecimal> previousOptionPrices = new HashMap<>();
+    private final Map<String, BigDecimal> initialPrices = new ConcurrentHashMap<>();
+    private final Map<String, BigDecimal> initialOptionPrices = new ConcurrentHashMap<>();
     
     /**
      * Initializes the portfolio by loading positions from CSV
@@ -74,11 +75,11 @@ public class PortfolioManagerService {
         portfolioRef.set(portfolio);
         logger.info("Portfolio initialized with {} positions", portfolio.getPositionCount());
         
-        // Display initial summary with "new" indicators (before setting previous prices)
+        // Display initial summary with "new" indicators (before setting initial prices)
         String separator = "=================================================================================";
-        String initialSummary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, previousPrices, previousOptionPrices, true);
+        String initialSummary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, initialPrices, initialOptionPrices, true);
         logger.info("\n{}\n{}\n{}", separator, initialSummary, separator);
-        updatePreviousPrices(portfolio);
+        setInitialPrices(portfolio);
     }
     
     public void startRealTimeMonitoring() {
@@ -144,7 +145,7 @@ public class PortfolioManagerService {
                 portfolioCalculationService.updateMarketDataAndRecalculate(portfolio);
                 
                 // Log market data in Protobuf format for debugging
-                marketDataService.logMarketDataSnapshot(previousPrices);
+                marketDataService.logMarketDataSnapshot(initialPrices);
             }
         }
     
@@ -166,13 +167,12 @@ public class PortfolioManagerService {
         }
         
         String separator = "=================================================================================";
-        String summary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, previousPrices, previousOptionPrices);
+        String summary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, initialPrices, initialOptionPrices);
         
         // Log the portfolio summary
         logger.info("\n{}\n{}\n{}", separator, summary, separator);
         
-        // Update previous prices for next comparison
-        updatePreviousPrices(portfolio);
+        // Note: We don't update initial prices - they remain as the baseline for comparison
     }
     
     /**
@@ -206,15 +206,15 @@ public class PortfolioManagerService {
             }
             
             if (position.getSecurity().getType().name().equals("STOCK")) {
-                BigDecimal previousPrice = previousPrices.get(symbol);
-                if (previousPrice == null || currentPrice.compareTo(previousPrice) != 0) {
+                BigDecimal initialPrice = initialPrices.get(symbol);
+                if (initialPrice == null || currentPrice.compareTo(initialPrice) != 0) {
                     hasChanges = true;
                     break;
                 }
             } else {
                 // For options, check option prices
-                BigDecimal previousPrice = previousOptionPrices.get(symbol);
-                if (previousPrice == null || currentPrice.compareTo(previousPrice) != 0) {
+                BigDecimal initialPrice = initialOptionPrices.get(symbol);
+                if (initialPrice == null || currentPrice.compareTo(initialPrice) != 0) {
                     hasChanges = true;
                     break;
                 }
@@ -225,9 +225,9 @@ public class PortfolioManagerService {
     }
     
     /**
-     * Updates the previous prices for next comparison
+     * Sets the initial prices for baseline comparison (called only once during initialization)
      */
-    private void updatePreviousPrices(Portfolio portfolio) {
+    private void setInitialPrices(Portfolio portfolio) {
         for (Position position : portfolio.getPositions()) {
             String symbol = position.getSymbol();
             BigDecimal currentPrice = position.getCurrentPrice();
@@ -239,11 +239,12 @@ public class PortfolioManagerService {
             }
             
             if (position.getSecurity().getType().name().equals("STOCK")) {
-                previousPrices.put(symbol, currentPrice);
+                initialPrices.put(symbol, currentPrice);
             } else {
-                previousOptionPrices.put(symbol, currentPrice);
+                initialOptionPrices.put(symbol, currentPrice);
             }
         }
+        logger.info("Initial prices set for {} stocks and {} options", initialPrices.size(), initialOptionPrices.size());
     }
     
     /**

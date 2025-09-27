@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Map;
 
@@ -104,7 +105,7 @@ public class ProtobufUtils {
             BigDecimal percentageChange = BigDecimal.ZERO;
             
             if (previousPrice.compareTo(BigDecimal.ZERO) != 0) {
-                percentageChange = absoluteChange.divide(previousPrice, 6, BigDecimal.ROUND_HALF_UP)
+                percentageChange = absoluteChange.divide(previousPrice, 6, RoundingMode.HALF_UP)
                     .multiply(new BigDecimal("100"));
             }
             

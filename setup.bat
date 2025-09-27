@@ -8,7 +8,7 @@ echo Checking Java installation...
 java -version
 if %errorlevel% neq 0 (
     echo ERROR: Java is not installed or not in PATH
-    echo Please install Java 8 or higher
+    echo Please install Java 17
     pause
     exit /b 1
 )

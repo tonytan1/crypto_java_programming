@@ -40,6 +40,9 @@ public class MarketDataService {
     @Value("${portfolio.marketdata.update-interval-max:2000}")
     private long maxUpdateInterval;
     
+    @Value("#{${portfolio.marketdata.initial-prices:{'AAPL':'150.00','TELSA':'800.00'}}}")
+    private Map<String, String> initialPricesConfig;
+    
     private final Map<String, BigDecimal> currentPrices = new ConcurrentHashMap<>();
     private final Map<String, BigDecimal> initialPrices = new ConcurrentHashMap<>();
     
@@ -47,6 +50,7 @@ public class MarketDataService {
     
     public void initializePrices() {
         logger.info("Initializing market data service...");
+        logger.info("Using initial prices configuration: {}", initialPricesConfig);
         
         List<Security> stocks = securityRepository.findByType(SecurityType.STOCK);
         if (stocks.isEmpty()) {
@@ -152,17 +156,27 @@ public class MarketDataService {
     }
     
     /**
-     * Gets initial price for a stock (customize as needed)
+     * Gets initial price for a stock from configuration
      */
     private BigDecimal getInitialPrice(String ticker) {
-        // You can customize initial prices here
-        switch (ticker.toUpperCase()) {
-            case "AAPL":
-                return new BigDecimal("150.00");
-            case "TELSA":
-                return new BigDecimal("800.00");
-            default:
+        try {
+            // Get price directly from the configured map
+            String priceStr = initialPricesConfig.get(ticker.toUpperCase());
+            
+            if (priceStr != null) {
+                return new BigDecimal(priceStr);
+            } else {
+                // Return default price if not configured
+                logger.debug("No initial price configured for {}, using default $100.00", ticker);
                 return new BigDecimal("100.00");
+            }
+        } catch (NumberFormatException e) {
+            String priceStr = initialPricesConfig.get(ticker.toUpperCase());
+            logger.warn("Invalid price format for {}: {}, using default", ticker, priceStr, e.getMessage());
+            return new BigDecimal("100.00");
+        } catch (Exception e) {
+            logger.warn("Error getting initial price for {}, using default: {}", ticker, e.getMessage());
+            return new BigDecimal("100.00");
         }
     }
     

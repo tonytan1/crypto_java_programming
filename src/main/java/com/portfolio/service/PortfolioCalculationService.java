@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -144,16 +145,16 @@ public class PortfolioCalculationService {
             StringBuilder summary = new StringBuilder();
             summary.append("=== Portfolio Summary ===\n");
             summary.append("Total Positions: ").append(portfolio.getPositionCount()).append("\n");
-            summary.append("Total NAV: $").append(portfolio.getTotalNAV().setScale(2, BigDecimal.ROUND_HALF_UP)).append("\n");
+            summary.append("Total NAV: $").append(portfolio.getTotalNAV().setScale(2, RoundingMode.DOWN)).append("\n");
             summary.append("Last Updated: ").append(portfolio.getLastUpdated()).append("\n\n");
             
             summary.append("=== Position Details ===\n");
             for (Position position : portfolio.getPositions()) {
                 summary.append(String.format("%-20s | %10s | $%10s | $%12s\n",
                         position.getSymbol(),
-                        position.getPositionSize().setScale(0, BigDecimal.ROUND_HALF_UP),
-                        position.getCurrentPrice().setScale(2, BigDecimal.ROUND_HALF_UP),
-                        position.getMarketValue().setScale(2, BigDecimal.ROUND_HALF_UP)));
+                        position.getPositionSize().setScale(0, RoundingMode.DOWN),
+                        position.getCurrentPrice().setScale(2, RoundingMode.DOWN),
+                        position.getMarketValue().setScale(2, RoundingMode.DOWN)));
             }
             
             return summary.toString();
@@ -183,17 +184,18 @@ public class PortfolioCalculationService {
             if (isInitial) {
                 summary.append("=== INITIAL PORTFOLIO SUMMARY ===\n");
                 summary.append("Total Positions: ").append(portfolio.getPositionCount()).append("\n");
-                summary.append("Total NAV: $").append(portfolio.getTotalNAV().setScale(2, BigDecimal.ROUND_HALF_UP)).append("\n");
+                summary.append("Total NAV: $").append(portfolio.getTotalNAV().setScale(2, RoundingMode.DOWN)).append("\n");
                 summary.append("Initialized: ").append(portfolio.getLastUpdated()).append("\n");
                 summary.append("Status: All positions marked as NEW (first time display)\n\n");
             } else {
                 summary.append("=== PORTFOLIO UPDATE (Price Changes Detected) ===\n");
                 summary.append("Total Positions: ").append(portfolio.getPositionCount()).append("\n");
-                summary.append("Total NAV: $").append(portfolio.getTotalNAV().setScale(2, BigDecimal.ROUND_HALF_UP)).append("\n");
+                summary.append("Total NAV: $").append(portfolio.getTotalNAV().setScale(2, RoundingMode.DOWN)).append("\n");
                 summary.append("Last Updated: ").append(portfolio.getLastUpdated()).append("\n");
                 
-                // Count changes
-                int upCount = 0, downCount = 0, newCount = 0;
+                // Show specific price changes
+                summary.append("Price Changes:\n");
+                boolean hasChanges = false;
                 for (Position position : portfolio.getPositions()) {
                     String symbol = position.getSymbol();
                     BigDecimal currentPrice = position.getCurrentPrice();
@@ -205,16 +207,23 @@ public class PortfolioCalculationService {
                         previousPrice = previousOptionPrices.get(symbol);
                     }
                     
-                    if (previousPrice == null) {
-                        newCount++;
-                    } else {
+                    if (previousPrice != null && previousPrice.compareTo(BigDecimal.ZERO) > 0) {
                         int comparison = currentPrice.compareTo(previousPrice);
-                        if (comparison > 0) upCount++;
-                        else if (comparison < 0) downCount++;
+                        if (comparison != 0) {
+                            hasChanges = true;
+                            if (comparison > 0) {
+                                summary.append("  ").append(symbol).append(" UP to $").append(currentPrice.setScale(2, RoundingMode.DOWN)).append("\n");
+                            } else {
+                                summary.append("  ").append(symbol).append(" DOWN to $").append(currentPrice.setScale(2, RoundingMode.DOWN)).append("\n");
+                            }
+                        }
                     }
                 }
                 
-                summary.append("Changes: ").append(upCount).append(" UP, ").append(downCount).append(" DOWN, ").append(newCount).append(" NEW\n\n");
+                if (!hasChanges) {
+                    summary.append("  No price changes detected\n");
+                }
+                summary.append("\n");
             }
             
             summary.append("=== Position Details ===\n");
@@ -224,7 +233,7 @@ public class PortfolioCalculationService {
                 BigDecimal previousPrice = null;
                 String changeIndicator = "";
                 
-                // Determine previous price and change indicator
+                // Determine initial price and change indicator
                 if (position.getSecurity().getType().name().equals("STOCK")) {
                     previousPrice = previousStockPrices.get(symbol);
                 } else {
@@ -238,27 +247,41 @@ public class PortfolioCalculationService {
                     int comparison = currentPrice.compareTo(previousPrice);
                     if (comparison > 0) {
                         BigDecimal change = currentPrice.subtract(previousPrice);
-                        BigDecimal percentChange = change.divide(previousPrice, 4, BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal("100"));
+                        BigDecimal percentChange = change.divide(previousPrice, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"));
                         changeIndicator = String.format(" [UP +$%.2f (+%.2f%%)]", change, percentChange);
                     } else if (comparison < 0) {
                         BigDecimal change = currentPrice.subtract(previousPrice);
-                        BigDecimal percentChange = change.divide(previousPrice, 4, BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal("100"));
-                        changeIndicator = String.format(" [DOWN $%.2f (%.2f%%)]", change.abs(), percentChange.abs());
+                        BigDecimal percentChange = change.divide(previousPrice, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"));
+                        changeIndicator = String.format(" [DOWN $%.2f (%.2f%%)]", change.abs(), percentChange);
                     } else {
                         changeIndicator = " [SAME]"; // No change (shouldn't happen with our logic)
                     }
                 } else if (previousPrice != null && previousPrice.compareTo(BigDecimal.ZERO) == 0) {
-                    // Handle case where previous price was zero (from zero to non-zero)
-                    changeIndicator = String.format(" [UP +$%.2f (NEW)]", currentPrice);
+                    // Handle case where previous price was zero
+                    if (currentPrice.compareTo(BigDecimal.ZERO) > 0) {
+                        // From zero to non-zero: show as NEW
+                        changeIndicator = String.format(" [UP +$%.2f (NEW)]", currentPrice);
+                    } else {
+                        // From zero to zero: show as SAME (expired options)
+                        changeIndicator = " [SAME]";
+                    }
+                } else if (previousPrice == null && currentPrice.compareTo(BigDecimal.ZERO) == 0) {
+                    // First time seeing a zero price: show as NEW only if it's initial display
+                    if (isInitial) {
+                        changeIndicator = " [NEW]";
+                    } else {
+                        // This shouldn't happen in normal flow, but show as SAME for safety
+                        changeIndicator = " [SAME]";
+                    }
                 } else {
-                    changeIndicator = " [NEW]"; // New price (first time)
+                    changeIndicator = " [NEW]"; // New price (first time, non-zero)
                 }
                 
                 summary.append(String.format("%-20s | %10s | $%10s | $%12s%s\n",
                         position.getSymbol(),
-                        position.getPositionSize().setScale(0, BigDecimal.ROUND_HALF_UP),
-                        position.getCurrentPrice().setScale(2, BigDecimal.ROUND_HALF_UP),
-                        position.getMarketValue().setScale(2, BigDecimal.ROUND_HALF_UP),
+                        position.getPositionSize().setScale(0, RoundingMode.DOWN),
+                        position.getCurrentPrice().setScale(2, RoundingMode.DOWN),
+                        position.getMarketValue().setScale(2, RoundingMode.DOWN),
                         changeIndicator));
             }
             

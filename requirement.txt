@@ -36,7 +36,7 @@ o Please do not distribute the binaries of these dependencies –just mention th
 will source them ourselves.
 o If you need additional 3rd party libraries then feel free to check with us.
 - Provide a README
-- Project should be built with Gradle and JDK 1.8
+- Project should be built with Gradle and JDK 17
 - Zip the source code, protected with password
 Sample
 This is just for reference. If you have a better and clear input / output solution, you don’t need to follow these samples.

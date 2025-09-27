@@ -312,7 +312,7 @@ public class PortfolioManagerServiceTest {
         
         // Use reflection to call private method
         try {
-            java.lang.reflect.Method updateMethod = PortfolioManagerService.class.getDeclaredMethod("updatePreviousPrices", Portfolio.class);
+            java.lang.reflect.Method updateMethod = PortfolioManagerService.class.getDeclaredMethod("setInitialPrices", Portfolio.class);
             updateMethod.setAccessible(true);
             updateMethod.invoke(portfolioManagerService, testPortfolio);
             
