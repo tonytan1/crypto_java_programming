@@ -82,7 +82,8 @@ protobuf {
         all().each { task ->
             task.builtins {
                 java {
-                    option 'lite'
+                    // Remove 'lite' option to generate standard Java classes
+                    // This reduces casting warnings in generated code
                 }
             }
         }
