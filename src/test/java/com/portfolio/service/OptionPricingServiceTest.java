@@ -222,4 +222,122 @@ public class OptionPricingServiceTest {
         assertThrows(NullPointerException.class, 
             () -> optionPricingService.calculateOptionPrice(callOption, null));
     }
+
+    @Test
+    @DisplayName("Should return intrinsic value for call option on maturity date")
+    public void testCallOptionOnMaturityDate() {
+        Security callOptionToday = new Security();
+        callOptionToday.setTicker("AAPL-CALL-150-2025");
+        callOptionToday.setType(SecurityType.CALL);
+        callOptionToday.setStrike(new BigDecimal("150.00"));
+        callOptionToday.setMaturity(LocalDate.now());
+        callOptionToday.setMu(new BigDecimal("0.10"));
+        callOptionToday.setSigma(new BigDecimal("0.25"));
+        
+        BigDecimal underlyingPrice = new BigDecimal("155.00"); // Above strike price
+        
+        BigDecimal optionPrice = optionPricingService.calculateOptionPrice(callOptionToday, underlyingPrice);
+        
+        // Expected intrinsic value: max(0, S - K) = max(0, 155 - 150) = 5
+        BigDecimal expectedIntrinsicValue = new BigDecimal("5.00");
+        assertEquals(expectedIntrinsicValue, optionPrice, 
+            "Call option on maturity date should equal intrinsic value when in-the-money");
+    }
+
+    @Test
+    @DisplayName("Should return zero for out-of-the-money call option on maturity date")
+    public void testOutOfTheMoneyCallOptionOnMaturityDate() {
+        Security callOptionToday = new Security();
+        callOptionToday.setTicker("AAPL-CALL-150-2025");
+        callOptionToday.setType(SecurityType.CALL);
+        callOptionToday.setStrike(new BigDecimal("150.00"));
+        callOptionToday.setMaturity(LocalDate.now());
+        callOptionToday.setMu(new BigDecimal("0.10"));
+        callOptionToday.setSigma(new BigDecimal("0.25"));
+        
+        BigDecimal underlyingPrice = new BigDecimal("145.00"); // Below strike price
+        
+        BigDecimal optionPrice = optionPricingService.calculateOptionPrice(callOptionToday, underlyingPrice);
+        
+        assertEquals(BigDecimal.ZERO, optionPrice, 
+            "Out-of-the-money call option on maturity date should have zero value");
+    }
+
+    @Test
+    @DisplayName("Should return intrinsic value for put option on maturity date")
+    public void testPutOptionOnMaturityDate() {
+        Security putOptionToday = new Security();
+        putOptionToday.setTicker("AAPL-PUT-150-2025");
+        putOptionToday.setType(SecurityType.PUT);
+        putOptionToday.setStrike(new BigDecimal("150.00"));
+        putOptionToday.setMaturity(LocalDate.now());
+        putOptionToday.setMu(new BigDecimal("0.10"));
+        putOptionToday.setSigma(new BigDecimal("0.25"));
+        
+        BigDecimal underlyingPrice = new BigDecimal("145.00"); // Below strike price
+        
+        BigDecimal optionPrice = optionPricingService.calculateOptionPrice(putOptionToday, underlyingPrice);
+        
+        // Expected intrinsic value: max(0, K - S) = max(0, 150 - 145) = 5
+        BigDecimal expectedIntrinsicValue = new BigDecimal("5.00");
+        assertEquals(expectedIntrinsicValue, optionPrice, 
+            "Put option on maturity date should equal intrinsic value when in-the-money");
+    }
+
+    @Test
+    @DisplayName("Should return zero for out-of-the-money put option on maturity date")
+    public void testOutOfTheMoneyPutOptionOnMaturityDate() {
+        Security putOptionToday = new Security();
+        putOptionToday.setTicker("AAPL-PUT-150-2025");
+        putOptionToday.setType(SecurityType.PUT);
+        putOptionToday.setStrike(new BigDecimal("150.00"));
+        putOptionToday.setMaturity(LocalDate.now());
+        putOptionToday.setMu(new BigDecimal("0.10"));
+        putOptionToday.setSigma(new BigDecimal("0.25"));
+        
+        BigDecimal underlyingPrice = new BigDecimal("155.00"); // Above strike price
+        
+        BigDecimal optionPrice = optionPricingService.calculateOptionPrice(putOptionToday, underlyingPrice);
+        
+        assertEquals(BigDecimal.ZERO, optionPrice, 
+            "Out-of-the-money put option on maturity date should have zero value");
+    }
+
+    @Test
+    @DisplayName("Should return zero for at-the-money option on maturity date")
+    public void testAtTheMoneyOptionOnMaturityDate() {
+        Security callOptionToday = new Security();
+        callOptionToday.setTicker("AAPL-CALL-150-2025");
+        callOptionToday.setType(SecurityType.CALL);
+        callOptionToday.setStrike(new BigDecimal("150.00"));
+        callOptionToday.setMaturity(LocalDate.now());
+        callOptionToday.setMu(new BigDecimal("0.10"));
+        callOptionToday.setSigma(new BigDecimal("0.25"));
+        
+        BigDecimal underlyingPrice = new BigDecimal("150.00"); // Equal to strike price
+        
+        BigDecimal optionPrice = optionPricingService.calculateOptionPrice(callOptionToday, underlyingPrice);
+        
+        assertEquals(BigDecimal.ZERO, optionPrice, 
+            "At-the-money option on maturity date should have zero intrinsic value");
+    }
+
+    @Test
+    @DisplayName("Should return zero for expired option")
+    public void testExpiredOption() {
+        Security expiredCall = new Security();
+        expiredCall.setTicker("AAPL-CALL-150-2025");
+        expiredCall.setType(SecurityType.CALL);
+        expiredCall.setStrike(new BigDecimal("150.00"));
+        expiredCall.setMaturity(LocalDate.now().minusDays(1)); // Expired yesterday
+        expiredCall.setMu(new BigDecimal("0.10"));
+        expiredCall.setSigma(new BigDecimal("0.25"));
+        
+        BigDecimal underlyingPrice = new BigDecimal("155.00");
+        
+        BigDecimal optionPrice = optionPricingService.calculateOptionPrice(expiredCall, underlyingPrice);
+        
+        assertEquals(BigDecimal.ZERO, optionPrice, 
+            "Expired option should have zero value");
+    }
 }

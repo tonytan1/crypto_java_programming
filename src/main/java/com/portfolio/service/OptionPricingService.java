@@ -39,8 +39,13 @@ public class OptionPricingService {
         LocalDate today = LocalDate.now();
         
         long daysToMaturity = ChronoUnit.DAYS.between(today, maturity);
-        if (daysToMaturity <= 0) {
+        if (daysToMaturity < 0) {
             return BigDecimal.ZERO; // Option has expired
+        }
+        
+        // If maturity is today (daysToMaturity == 0), option value equals intrinsic value
+        if (daysToMaturity == 0) {
+            return calculateIntrinsicValue(option, underlyingPrice);
         }
         
         BigDecimal timeToMaturity = new BigDecimal(daysToMaturity).divide(new BigDecimal(365), SCALE, RoundingMode.HALF_UP);
@@ -129,5 +134,24 @@ public class OptionPricingService {
         double y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
         
         return sign * y;
+    }
+    
+    /**
+     * Calculates the intrinsic value of an option at maturity
+     * For calls: max(0, S - K)
+     * For puts: max(0, K - S)
+     */
+    private BigDecimal calculateIntrinsicValue(Security option, BigDecimal underlyingPrice) {
+        BigDecimal strike = option.getStrike();
+        
+        if (option.getType() == SecurityType.CALL) {
+            BigDecimal intrinsicValue = underlyingPrice.subtract(strike);
+            return intrinsicValue.compareTo(BigDecimal.ZERO) > 0 ? intrinsicValue : BigDecimal.ZERO;
+        } else if (option.getType() == SecurityType.PUT) {
+            BigDecimal intrinsicValue = strike.subtract(underlyingPrice);
+            return intrinsicValue.compareTo(BigDecimal.ZERO) > 0 ? intrinsicValue : BigDecimal.ZERO;
+        }
+        
+        return BigDecimal.ZERO;
     }
 }
