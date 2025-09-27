@@ -4,8 +4,7 @@ import com.portfolio.event.EventPublisher;
 import com.portfolio.events.PortfolioEventProtos;
 import com.portfolio.model.Portfolio;
 import com.portfolio.model.Position;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Service
 public class PortfolioManagerService {
     
-    private static final Logger logger = LoggerFactory.getLogger(PortfolioManagerService.class);
+    private static final Logger logger = Logger.getLogger(PortfolioManagerService.class.getName());
     
     @Autowired
     private PositionLoaderService positionLoaderService;
@@ -56,7 +55,7 @@ public class PortfolioManagerService {
         List<Position> positions = positionLoaderService.loadPositions();
         List<String> missingSecurities = positionLoaderService.validatePositions(positions);
         if (!missingSecurities.isEmpty()) {
-            logger.warn("Missing security definitions for: {}", missingSecurities);
+            logger.warning("Missing security definitions for: " + missingSecurities);
         }
         
         Portfolio portfolio = new Portfolio(positions);
@@ -72,12 +71,12 @@ public class PortfolioManagerService {
         }
         
         portfolioRef.set(portfolio);
-        logger.info("Portfolio initialized with {} positions", portfolio.getPositionCount());
+        logger.info("Portfolio initialized with " + portfolio.getPositionCount() + " positions");
         
         // Display initial summary with "new" indicators (before setting initial prices)
         String separator = "=================================================================================";
         String initialSummary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, initialPrices, initialOptionPrices, true);
-        logger.info("\n{}\n{}\n{}", separator, initialSummary, separator);
+        logger.info("\n" + separator + "\n" + initialSummary + "\n" + separator);
         setInitialPrices(portfolio);
     }
     
@@ -88,7 +87,7 @@ public class PortfolioManagerService {
         }
         
         if (portfolioRef.get() == null) {
-            logger.error("Portfolio not initialized. Call initializePortfolio() first.");
+            logger.severe("Portfolio not initialized. Call initializePortfolio() first.");
             return;
         }
         
@@ -101,14 +100,14 @@ public class PortfolioManagerService {
             try {
                 updatePortfolio();
             } catch (Exception e) {
-                logger.error("Error updating portfolio: {}", e.getMessage(), e);
+                logger.severe("Error updating portfolio: " + e.getMessage());
             }
         }, 0, 1, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 displayPortfolioSummary();
             } catch (Exception e) {
-                logger.error("Error displaying portfolio summary: {}", e.getMessage(), e);
+                logger.severe("Error displaying portfolio summary: " + e.getMessage());
             }
         }, 2, 5, TimeUnit.SECONDS);
     }
@@ -151,17 +150,17 @@ public class PortfolioManagerService {
     private void displayPortfolioSummary() {
         Portfolio portfolio = portfolioRef.get();
         if (portfolio == null) {
-            logger.warn("Portfolio not available for summary display");
+            logger.warning("Portfolio not available for summary display");
             return;
         }
         
         // Check if any prices have changed
         boolean hasChanges = checkForPriceChanges(portfolio);
-        logger.debug("Price change check result: hasChanges = {}", hasChanges);
+        logger.fine("Price change check result: hasChanges = " + hasChanges);
         
         if (!hasChanges) {
             // No changes detected, skip display
-            logger.debug("No price changes detected, skipping portfolio summary display");
+            logger.fine("No price changes detected, skipping portfolio summary display");
             return;
         }
         
@@ -169,7 +168,7 @@ public class PortfolioManagerService {
         String summary = portfolioCalculationService.getPortfolioSummaryWithChanges(portfolio, initialPrices, initialOptionPrices);
         
         // Log the portfolio summary
-        logger.info("\n{}\n{}\n{}", separator, summary, separator);
+        logger.info("\n" + separator + "\n" + summary + "\n" + separator);
         
         // Note: We don't update initial prices - they remain as the baseline for comparison
     }
@@ -200,7 +199,7 @@ public class PortfolioManagerService {
             
             // Skip positions without security definitions
             if (position.getSecurity() == null) {
-                logger.debug("Skipping position {} - no security definition for change check", symbol);
+                logger.fine("Skipping position " + symbol + " - no security definition for change check");
                 continue;
             }
             
@@ -233,7 +232,7 @@ public class PortfolioManagerService {
             
             // Skip positions without security definitions
             if (position.getSecurity() == null) {
-                logger.warn("Skipping position {} - no security definition", symbol);
+                logger.warning("Skipping position " + symbol + " - no security definition");
                 continue;
             }
             
@@ -243,7 +242,7 @@ public class PortfolioManagerService {
                 initialOptionPrices.put(symbol, currentPrice);
             }
         }
-        logger.info("Initial prices set for {} stocks and {} options", initialPrices.size(), initialOptionPrices.size());
+        logger.info("Initial prices set for " + initialPrices.size() + " stocks and " + initialOptionPrices.size() + " options");
     }
     
     /**

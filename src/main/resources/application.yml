@@ -47,17 +47,12 @@ spring:
 # ============================================================================
 # Logging Configuration
 # ============================================================================
-logging:
-  level:
-    # Application logging
-    com.portfolio: INFO
-    
-    # Hibernate logging (set to DEBUG for SQL debugging)
-    org.hibernate.SQL: WARN
-    org.hibernate.type.descriptor.sql.BasicBinder: WARN
-    
-    # Spring framework logging
-    org.springframework: WARN
-    
-    # Root logger
-    root: INFO
+# Note: Logging is configured in src/main/resources/logging.properties
+# This file configures java.util.logging.Logger to output logs to:
+# - Console (INFO level and above)
+# - Files in logs/ folder (ALL levels with rotation)
+# 
+# The logging.properties file contains detailed configuration for:
+# - Log file rotation (5 files, 10MB each)
+# - Package-specific log levels
+# - Formatting and encoding

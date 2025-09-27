@@ -4,10 +4,8 @@ import com.portfolio.event.EventPublisher;
 import com.portfolio.marketdata.MarketDataProtos;
 import com.portfolio.model.Security;
 import com.portfolio.model.SecurityType;
-import com.portfolio.repository.SecurityRepository;
+import com.portfolio.repository.CachedSecurityRepository;
 import com.portfolio.util.ProtobufUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -19,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Logger;
 
 /**
  * Service for simulating market data using geometric Brownian motion.
@@ -27,10 +26,10 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class MarketDataService {
     
-    private static final Logger logger = LoggerFactory.getLogger(MarketDataService.class);
+    private static final Logger logger = Logger.getLogger(MarketDataService.class.getName());
     
     @Autowired
-    private SecurityRepository securityRepository;
+    private CachedSecurityRepository cachedSecurityRepository;
     
     @Autowired
     private EventPublisher eventPublisher;
@@ -51,11 +50,11 @@ public class MarketDataService {
     
     public void initializePrices() {
         logger.info("Initializing market data service...");
-        logger.info("Using initial prices configuration: {}", initialPricesConfig);
+        logger.info("Using initial prices configuration: " + initialPricesConfig);
         
-        List<Security> stocks = securityRepository.findByType(SecurityType.STOCK);
+        List<Security> stocks = cachedSecurityRepository.findByType(SecurityType.STOCK);
         if (stocks.isEmpty()) {
-            logger.warn("No stocks found in database");
+            logger.warning("No stocks found in database");
             return;
         }
         
@@ -72,16 +71,15 @@ public class MarketDataService {
         }
         
         if (skippedCount > 0) {
-            logger.warn("Skipped {} stocks due to missing or invalid price configurations", skippedCount);
+            logger.warning("Skipped " + skippedCount + " stocks due to missing or invalid price configurations");
         }
         
         if (initializedCount == 0) {
-            logger.error("No stocks could be initialized - check your price configurations");
+            logger.severe("No stocks could be initialized - check your price configurations");
             throw new IllegalStateException("No stocks could be initialized. Please check your price configurations in application.yml");
         }
         
-        logger.info("Market data service initialized successfully with {} stocks ({} skipped)", 
-                   initializedCount, skippedCount);
+        logger.info("Market data service initialized successfully with " + initializedCount + " stocks (" + skippedCount + " skipped)");
     }
     
     /**
@@ -97,11 +95,11 @@ public class MarketDataService {
             currentPrices.put(ticker, initialPrice);
             randomSeeds.put(ticker, new AtomicLong(System.nanoTime() + ticker.hashCode()));
             
-            logger.info("Initialized {} with price: ${}", ticker, initialPrice);
+            logger.info("Initialized " + ticker + " with price: $" + initialPrice);
             return true;
             
         } catch (Exception e) {
-            logger.warn("Skipping stock {} due to configuration issue: {}", ticker, e.getMessage());
+            logger.warning("Skipping stock " + ticker + " due to configuration issue: " + e.getMessage());
             return false;
         }
     }
@@ -278,7 +276,7 @@ public class MarketDataService {
      */
     public void logMarketDataSnapshot(Map<String, BigDecimal> previousPrices) {
         MarketDataProtos.MarketDataSnapshot snapshot = createMarketDataSnapshot(previousPrices);
-        logger.debug("Market Data Snapshot (Protobuf):\n{}", ProtobufUtils.toReadableString(snapshot));
+        logger.fine("Market Data Snapshot (Protobuf):\n" + ProtobufUtils.toReadableString(snapshot));
     }
 }
 

@@ -1,45 +1,31 @@
 package com.portfolio.model;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * Entity representing a security in the portfolio system.
+ * Model representing a security in the portfolio system.
  * Can be a stock, call option, or put option.
  */
-@Entity
-@Table(name = "security")
 public class Security {
     
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "ticker", nullable = false, unique = true, length = 50)
     private String ticker;
     
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
     private SecurityType type;
     
-    @Column(name = "strike", precision = 10, scale = 2)
     private BigDecimal strike;
     
-    @Column(name = "maturity")
     private LocalDate maturity;
     
-    @Column(name = "mu", precision = 10, scale = 6)
     private BigDecimal mu; // Expected return
     
-    @Column(name = "sigma", precision = 10, scale = 6)
     private BigDecimal sigma; // Volatility
     
-    @Column(name = "created_at")
     private LocalDateTime createdAt;
     
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
     // Constructors
@@ -135,13 +121,11 @@ public class Security {
         this.updatedAt = updatedAt;
     }
     
-    @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
     
-    @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }

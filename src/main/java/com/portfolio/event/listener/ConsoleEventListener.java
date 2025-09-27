@@ -2,8 +2,7 @@ package com.portfolio.event.listener;
 
 import com.portfolio.event.PortfolioEventListener;
 import com.portfolio.events.PortfolioEventProtos;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConsoleEventListener implements PortfolioEventListener {
     
-    private static final Logger logger = LoggerFactory.getLogger(ConsoleEventListener.class);
+    private static final Logger logger = Logger.getLogger(ConsoleEventListener.class.getName());
     
     @Override
     public void onEvent(PortfolioEventProtos.PortfolioEvent event) {
@@ -26,60 +25,49 @@ public class ConsoleEventListener implements PortfolioEventListener {
             case SYSTEM_STOPPED -> handleSystemStopped(event);
             case ERROR_OCCURRED -> handleError(event);
             case PERFORMANCE_METRIC -> handlePerformanceMetric(event);
-            default -> logger.debug("Unhandled event type: {}", event.getType());
+            default -> logger.fine("Unhandled event type: " + event.getType());
         }
     }
     
     private void handleMarketDataUpdate(PortfolioEventProtos.PortfolioEvent event) {
         PortfolioEventProtos.MarketDataUpdate marketData = event.getMarketData();
-        logger.debug("MARKET DATA: {} = ${} [{} ${} ({}%)]", 
-                   marketData.getTicker(),
-                   String.format("%.2f", marketData.getPrice()),
-                   marketData.getDirection().name(),
-                   String.format("%.2f", marketData.getAbsoluteChange()),
-                   String.format("%.2f", marketData.getPercentageChange()));
+        logger.fine("MARKET DATA: " + marketData.getTicker() + " = $" + 
+                   String.format("%.2f", marketData.getPrice()) + " [" + marketData.getDirection().name() + " $" +
+                   String.format("%.2f", marketData.getAbsoluteChange()) + " (" + String.format("%.2f", marketData.getPercentageChange()) + "%)]");
     }
     
     private void handlePortfolioRecalculated(PortfolioEventProtos.PortfolioEvent event) {
         PortfolioEventProtos.PortfolioSummary summary = event.getPortfolioSummary();
-        logger.info("PORTFOLIO: NAV = ${} | Positions = {} | Time = {}ms", 
-                   String.format("%.2f", summary.getTotalNav()),
-                   summary.getPositionCount(),
-                   summary.getPerformance().getCalculationTimeMs());
+        logger.info("PORTFOLIO: NAV = $" + String.format("%.2f", summary.getTotalNav()) + " | Positions = " + 
+                   summary.getPositionCount() + " | Time = " + summary.getPerformance().getCalculationTimeMs() + "ms");
     }
     
     private void handlePositionUpdate(PortfolioEventProtos.PortfolioEvent event) {
         PortfolioEventProtos.PositionUpdate positionUpdate = event.getPositionUpdate();
-        logger.debug("POSITION: {} {} | Size: {} -> {} | Reason: {}", 
-                   positionUpdate.getAction().name(),
-                   positionUpdate.getSymbol(),
-                   positionUpdate.getOldSize(),
-                   positionUpdate.getNewSize(),
-                   positionUpdate.getReason());
+        logger.fine("POSITION: " + positionUpdate.getAction().name() + " " + positionUpdate.getSymbol() + 
+                   " | Size: " + positionUpdate.getOldSize() + " -> " + positionUpdate.getNewSize() + 
+                   " | Reason: " + positionUpdate.getReason());
     }
     
     private void handleSystemStarted(PortfolioEventProtos.PortfolioEvent event) {
-        logger.debug("SYSTEM: Portfolio system started at {}", event.getTimestamp());
+        logger.fine("SYSTEM: Portfolio system started at " + event.getTimestamp());
     }
     
     private void handleSystemStopped(PortfolioEventProtos.PortfolioEvent event) {
-        logger.debug("SYSTEM: Portfolio system stopped at {}", event.getTimestamp());
+        logger.fine("SYSTEM: Portfolio system stopped at " + event.getTimestamp());
     }
     
     private void handleError(PortfolioEventProtos.PortfolioEvent event) {
         PortfolioEventProtos.SystemAlert alert = event.getSystemAlert();
-        logger.error("ERROR: {} - {} | Component: {}", 
-                    alert.getLevel().name(),
-                    alert.getMessage(),
-                    alert.getComponent());
+        logger.severe("ERROR: " + alert.getLevel().name() + " - " + alert.getMessage() + 
+                    " | Component: " + alert.getComponent());
     }
     
     private void handlePerformanceMetric(PortfolioEventProtos.PortfolioEvent event) {
         PortfolioEventProtos.PortfolioSummary summary = event.getPortfolioSummary();
         PortfolioEventProtos.PerformanceMetrics perf = summary.getPerformance();
-        logger.debug("PERFORMANCE: Daily P&L = ${} | Volatility = {}% | Sharpe = {}", 
-                   String.format("%.2f", perf.getDailyPnl()),
-                   String.format("%.2f", perf.getPortfolioVolatility()),
+        logger.fine("PERFORMANCE: Daily P&L = $" + String.format("%.2f", perf.getDailyPnl()) + 
+                   " | Volatility = " + String.format("%.2f", perf.getPortfolioVolatility()) + "% | Sharpe = " + 
                    String.format("%.2f", perf.getSharpeRatio()));
     }
 }

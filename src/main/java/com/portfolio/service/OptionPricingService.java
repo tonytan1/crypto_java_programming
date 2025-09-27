@@ -1,8 +1,7 @@
 package com.portfolio.service;
 
 import com.portfolio.model.Security;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +16,7 @@ import java.time.temporal.ChronoUnit;
 @Service
 public class OptionPricingService {
     
-    private static final Logger logger = LoggerFactory.getLogger(OptionPricingService.class);
+    private static final Logger logger = Logger.getLogger(OptionPricingService.class.getName());
     
     @Value("${portfolio.marketdata.risk-free-rate:0.02}")
     private BigDecimal riskFreeRate;
@@ -62,7 +61,7 @@ public class OptionPricingService {
             };
             
         } catch (Exception e) {
-            logger.error("Error calculating option price for {}: {}", option != null ? option.getTicker() : "null", e.getMessage(), e);
+            logger.severe("Error calculating option price for " + (option != null ? option.getTicker() : "null") + ": " + e.getMessage());
             return BigDecimal.ZERO; // Return safe default instead of throwing
         }
     }
@@ -76,13 +75,13 @@ public class OptionPricingService {
     private boolean validateOptionInputs(Security option, BigDecimal underlyingPrice) {
         // Check for null option
         if (option == null) {
-            logger.warn("Option cannot be null");
+            logger.warning("Option cannot be null");
             return false;
         }
         
         // Check for valid underlying price
         if (underlyingPrice == null || underlyingPrice.compareTo(BigDecimal.ZERO) <= 0) {
-            logger.warn("Underlying price must be positive, got: {}", underlyingPrice);
+            logger.warning("Underlying price must be positive, got: " + underlyingPrice);
             return false;
         }
         
@@ -91,13 +90,13 @@ public class OptionPricingService {
             case STOCK -> false;
             case CALL, PUT -> true;
         }) {
-            logger.warn("Cannot calculate option price for stock: {}", option.getTicker());
+            logger.warning("Cannot calculate option price for stock: " + option.getTicker());
             return false;
         }
         
         // Check for required option parameters
         if (option.getStrike() == null || option.getMaturity() == null) {
-            logger.warn("Option must have strike price and maturity date: {}", option.getTicker());
+            logger.warning("Option must have strike price and maturity date: " + option.getTicker());
             return false;
         }
         

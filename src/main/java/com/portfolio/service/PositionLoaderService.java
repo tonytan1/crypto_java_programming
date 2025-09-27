@@ -3,15 +3,13 @@ package com.portfolio.service;
 import com.portfolio.model.Position;
 import com.portfolio.model.Security;
 import com.portfolio.repository.SecurityRepository;
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvValidationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -26,7 +24,7 @@ import java.util.regex.Pattern;
 @Service
 public class PositionLoaderService {
     
-    private static final Logger logger = LoggerFactory.getLogger(PositionLoaderService.class);
+    private static final Logger logger = Logger.getLogger(PositionLoaderService.class.getName());
     
     // Simple validation patterns
     private static final Pattern TICKER_PATTERN = Pattern.compile("^[A-Z0-9\\-_]{1,50}$");
@@ -52,27 +50,27 @@ public class PositionLoaderService {
     public List<Position> loadPositions(String filePath) throws IOException {
         // Simple file path validation using Spring's StringUtils
         if (!StringUtils.hasText(filePath) || !filePath.toLowerCase().endsWith(".csv")) {
-            logger.error("Invalid CSV file path: {}", filePath);
+            logger.severe("Invalid CSV file path: " + filePath);
             throw new IOException("Invalid CSV file path");
         }
         
         // Basic path traversal protection - only check for directory traversal attempts
         if (filePath.contains("..")) {
-            logger.error("Potentially unsafe file path detected: {}", filePath);
+            logger.severe("Potentially unsafe file path detected: " + filePath);
             throw new IOException("Unsafe file path detected");
         }
         
-        logger.info("Loading positions from CSV file: {}", filePath);
+        logger.info("Loading positions from CSV file: " + filePath);
         List<Position> positions = new ArrayList<>();
         int validLines = 0;
         int invalidLines = 0;
         
-        try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
-            String[] nextLine;
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
             boolean isFirstLine = true;
             int lineNumber = 0;
             
-            while ((nextLine = reader.readNext()) != null) {
+            while ((line = reader.readLine()) != null) {
                 lineNumber++;
                 
                 // Skip header line
@@ -81,19 +79,27 @@ public class PositionLoaderService {
                     continue;
                 }
                 
+                // Skip empty lines
+                if (!StringUtils.hasText(line)) {
+                    continue;
+                }
+                
+                // Parse CSV line (simple comma splitting)
+                String[] fields = line.split(",", -1);
+                
                 // Basic validation
-                if (nextLine.length < 2 || !StringUtils.hasText(nextLine[0]) || !StringUtils.hasText(nextLine[1])) {
-                    logger.warn("Skipping invalid line {}: missing required data", lineNumber);
+                if (fields.length < 2 || !StringUtils.hasText(fields[0]) || !StringUtils.hasText(fields[1])) {
+                    logger.warning("Skipping invalid line " + lineNumber + ": missing required data");
                     invalidLines++;
                     continue;
                 }
                 
                 try {
-                    String symbol = nextLine[0].trim().toUpperCase();
+                    String symbol = fields[0].trim().toUpperCase();
                     
                     // Simple ticker validation
                     if (!TICKER_PATTERN.matcher(symbol).matches()) {
-                        logger.warn("Invalid ticker format at line {}: {}", lineNumber, symbol);
+                        logger.warning("Invalid ticker format at line " + lineNumber + ": " + symbol);
                         invalidLines++;
                         continue;
                     }
@@ -101,14 +107,14 @@ public class PositionLoaderService {
                     // Parse and validate position size
                     BigDecimal positionSize;
                     try {
-                        positionSize = new BigDecimal(nextLine[1].trim());
+                        positionSize = new BigDecimal(fields[1].trim());
                         if (positionSize.compareTo(MIN_POSITION_SIZE) < 0 || positionSize.compareTo(MAX_POSITION_SIZE) > 0) {
-                            logger.warn("Position size out of range at line {}: {}", lineNumber, positionSize);
+                            logger.warning("Position size out of range at line " + lineNumber + ": " + positionSize);
                             invalidLines++;
                             continue;
                         }
                     } catch (NumberFormatException e) {
-                        logger.warn("Invalid numeric format at line {}: {}", lineNumber, nextLine[1]);
+                        logger.warning("Invalid numeric format at line " + lineNumber + ": " + fields[1]);
                         invalidLines++;
                         continue;
                     }
@@ -118,25 +124,22 @@ public class PositionLoaderService {
                     Security security = securityOpt.orElse(null);
                     
                     if (security == null) {
-                        logger.warn("No security definition found for symbol: {} at line {}", symbol, lineNumber);
+                        logger.warning("No security definition found for symbol: " + symbol + " at line " + lineNumber);
                     }
                     
                     Position position = new Position(symbol, positionSize, security);
                     positions.add(position);
                     validLines++;
-                    logger.debug("Loaded position: {} with size {}", symbol, positionSize);
+                    logger.fine("Loaded position: " + symbol + " with size " + positionSize);
                     
                 } catch (Exception e) {
-                    logger.error("Unexpected error processing line {}: {}", lineNumber, e.getMessage(), e);
+                    logger.severe("Unexpected error processing line " + lineNumber + ": " + e.getMessage());
                     invalidLines++;
                 }
             }
-        } catch (CsvValidationException e) {
-            logger.error("CSV validation error: {}", e.getMessage(), e);
-            throw new IOException("Error reading CSV file: " + e.getMessage(), e);
         }
         
-        logger.info("CSV loading completed: {} valid positions, {} invalid lines skipped", validLines, invalidLines);
+        logger.info("CSV loading completed: " + validLines + " valid positions, " + invalidLines + " invalid lines skipped");
         return positions;
     }
     

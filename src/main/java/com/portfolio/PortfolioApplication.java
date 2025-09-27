@@ -6,8 +6,7 @@ import com.portfolio.event.listener.ConsoleEventListener;
 import com.portfolio.service.DataInitializationService;
 import com.portfolio.service.MarketDataService;
 import com.portfolio.service.PortfolioManagerService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
@@ -28,7 +27,8 @@ import java.io.IOException;
 @ComponentScan(basePackages = "com.portfolio")
 public class PortfolioApplication {
     
-    private static final Logger logger = LoggerFactory.getLogger(PortfolioApplication.class);
+    private static final Logger logger = Logger.getLogger(PortfolioApplication.class.getName());
+    
     
     @Autowired
     private EventBus eventBus;
@@ -50,6 +50,7 @@ public class PortfolioApplication {
     private MarketDataService marketDataService;
     
     private boolean isRunning = false;
+    
 
     public static void main(String[] args) {
         try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(PortfolioApplication.class)) {
@@ -65,7 +66,7 @@ public class PortfolioApplication {
             app.run();
             
         } catch (Exception e) {
-            logger.error("Failed to start application: {}", e.getMessage(), e);
+            logger.severe("Failed to start application: " + e.getMessage());
         }
     }
     
@@ -84,7 +85,7 @@ public class PortfolioApplication {
         // Register event listeners
         eventBus.subscribe(consoleListener);
         
-        logger.info("Event system initialized with {} listeners", eventBus.getListenerCount());
+        logger.info("Event system initialized with " + eventBus.getListenerCount() + " listeners");
         
         // Publish system started event
         eventPublisher.publishSystemStarted();
@@ -121,7 +122,7 @@ public class PortfolioApplication {
             logger.info("Application interrupted");
             Thread.currentThread().interrupt();
         } catch (Exception e) {
-            logger.error("Unexpected error during execution: {}", e.getMessage(), e);
+            logger.severe("Unexpected error during execution: " + e.getMessage());
         }
     }
 }

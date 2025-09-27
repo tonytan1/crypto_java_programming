@@ -2,8 +2,7 @@ package com.portfolio.util;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.portfolio.marketdata.MarketDataProtos;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -16,7 +15,7 @@ import java.util.Map;
  */
 public class ProtobufUtils {
     
-    private static final Logger logger = LoggerFactory.getLogger(ProtobufUtils.class);
+    private static final Logger logger = Logger.getLogger(ProtobufUtils.class.getName());
     
     /**
      * Converts a Map of ticker->price to a MarketDataSnapshot Protobuf message.
@@ -136,7 +135,7 @@ public class ProtobufUtils {
         try {
             return snapshot.toByteArray();
         } catch (Exception e) {
-            logger.error("Failed to serialize MarketDataSnapshot: {}", e.getMessage(), e);
+            logger.severe("Failed to serialize MarketDataSnapshot: " + e.getMessage());
             throw new RuntimeException("Serialization failed", e);
         }
     }
@@ -151,7 +150,7 @@ public class ProtobufUtils {
         try {
             return MarketDataProtos.MarketDataSnapshot.parseFrom(data);
         } catch (InvalidProtocolBufferException e) {
-            logger.error("Failed to deserialize MarketDataSnapshot: {}", e.getMessage(), e);
+            logger.severe("Failed to deserialize MarketDataSnapshot: " + e.getMessage());
             throw new RuntimeException("Deserialization failed", e);
         }
     }
@@ -166,7 +165,7 @@ public class ProtobufUtils {
         try {
             return update.toByteArray();
         } catch (Exception e) {
-            logger.error("Failed to serialize MarketDataUpdate: {}", e.getMessage(), e);
+            logger.severe("Failed to serialize MarketDataUpdate: " + e.getMessage());
             throw new RuntimeException("Serialization failed", e);
         }
     }
@@ -181,7 +180,7 @@ public class ProtobufUtils {
         try {
             return MarketDataProtos.MarketDataUpdate.parseFrom(data);
         } catch (InvalidProtocolBufferException e) {
-            logger.error("Failed to deserialize MarketDataUpdate: {}", e.getMessage(), e);
+            logger.severe("Failed to deserialize MarketDataUpdate: " + e.getMessage());
             throw new RuntimeException("Deserialization failed", e);
         }
     }

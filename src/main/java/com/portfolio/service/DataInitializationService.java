@@ -3,8 +3,7 @@ package com.portfolio.service;
 import com.portfolio.model.Security;
 import com.portfolio.model.SecurityType;
 import com.portfolio.repository.SecurityRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +17,7 @@ import java.util.List;
 @Service
 public class DataInitializationService {
     
-    private static final Logger logger = LoggerFactory.getLogger(DataInitializationService.class);
+    private static final Logger logger = Logger.getLogger(DataInitializationService.class.getName());
     
     @Autowired
     private SecurityRepository securityRepository;
@@ -30,13 +29,13 @@ public class DataInitializationService {
         try {
             // Check if data already exists
             List<Security> existingSecurities = securityRepository.findAll();
-            logger.info("Found {} existing securities in database", existingSecurities.size());
+            logger.info("Found " + existingSecurities.size() + " existing securities in database");
             if (!existingSecurities.isEmpty()) {
                 logger.info("Sample data exists, resetting");
                 securityRepository.deleteAll();
             }
         } catch (Exception e) {
-            logger.error("Error checking existing securities: {}", e.getMessage(), e);
+            logger.severe("Error checking existing securities: " + e.getMessage());
             return;
         }
         
@@ -97,11 +96,11 @@ public class DataInitializationService {
             
             // Verify data was saved
             List<Security> savedSecurities = securityRepository.findAll();
-            logger.info("Sample data initialization completed. Created {} securities (2 stocks, 4 expired options, 4 active options)", savedSecurities.size());
+            logger.info("Sample data initialization completed. Created " + savedSecurities.size() + " securities (2 stocks, 4 expired options, 4 active options)");
             logger.info("=== DATA INITIALIZATION SERVICE COMPLETED ===");
             
         } catch (Exception e) {
-            logger.error("Error saving securities: {}", e.getMessage(), e);
+            logger.severe("Error saving securities: " + e.getMessage());
         }
     }
 }

@@ -1,8 +1,7 @@
 package com.portfolio.event;
 
 import com.portfolio.events.PortfolioEventProtos;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -18,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class EventBus {
     
-    private static final Logger logger = LoggerFactory.getLogger(EventBus.class);
+    private static final Logger logger = Logger.getLogger(EventBus.class.getName());
     
     private final List<PortfolioEventListener> listeners = new CopyOnWriteArrayList<>();
     private final ExecutorService executor = Executors.newCachedThreadPool();
@@ -31,7 +30,7 @@ public class EventBus {
      */
     public void publishEvent(PortfolioEventProtos.PortfolioEvent event) {
         if (listeners.isEmpty()) {
-            logger.debug("No listeners registered for event: {}", event.getType());
+            logger.fine("No listeners registered for event: " + event.getType());
             return;
         }
         
@@ -52,13 +51,12 @@ public class EventBus {
                 try {
                     listener.onEvent(finalEvent);
                 } catch (Exception e) {
-                    logger.error("Error delivering event to listener {}: {}", 
-                               listener.getClass().getSimpleName(), e.getMessage(), e);
+                    logger.severe("Error delivering event to listener " + listener.getClass().getSimpleName() + ": " + e.getMessage());
                 }
             });
         }
         
-        logger.debug("Published event {} to {} listeners", finalEvent.getType(), listeners.size());
+        logger.fine("Published event " + finalEvent.getType() + " to " + listeners.size() + " listeners");
     }
     
     /**
@@ -68,7 +66,7 @@ public class EventBus {
      */
     public void subscribe(PortfolioEventListener listener) {
         listeners.add(listener);
-        logger.info("Registered event listener: {}", listener.getClass().getSimpleName());
+        logger.info("Registered event listener: " + listener.getClass().getSimpleName());
     }
     
     /**
@@ -78,7 +76,7 @@ public class EventBus {
      */
     public void unsubscribe(PortfolioEventListener listener) {
         listeners.remove(listener);
-        logger.info("Unregistered event listener: {}", listener.getClass().getSimpleName());
+        logger.info("Unregistered event listener: " + listener.getClass().getSimpleName());
     }
     
     /**

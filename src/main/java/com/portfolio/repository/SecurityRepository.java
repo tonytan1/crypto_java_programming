@@ -2,8 +2,7 @@ package com.portfolio.repository;
 
 import com.portfolio.model.Security;
 import com.portfolio.model.SecurityType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -20,9 +19,9 @@ import java.util.Optional;
  * Repository for managing Security entities in the database.
  */
 @Repository
-public class SecurityRepository {
+public class SecurityRepository implements ISecurityRepository {
     
-    private static final Logger logger = LoggerFactory.getLogger(SecurityRepository.class);
+    private static final Logger logger = Logger.getLogger(SecurityRepository.class.getName());
     
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -63,7 +62,7 @@ public class SecurityRepository {
      */
     public Optional<Security> findByTicker(String ticker) {
         if (!StringUtils.hasText(ticker)) {
-            logger.warn("Empty ticker provided for database query");
+            logger.warning("Empty ticker provided for database query");
             return Optional.empty();
         }
         
@@ -78,7 +77,7 @@ public class SecurityRepository {
      */
     public List<Security> findByType(SecurityType type) {
         if (type == null) {
-            logger.warn("SecurityType cannot be null");
+            logger.warning("SecurityType cannot be null");
             return new ArrayList<>();
         }
         
@@ -91,18 +90,18 @@ public class SecurityRepository {
      */
     public Security save(Security security) {
         if (security == null) {
-            logger.warn("Cannot save null security");
+            logger.warning("Cannot save null security");
             throw new IllegalArgumentException("Security cannot be null");
         }
         
         // Basic validation using Spring's StringUtils
         if (!StringUtils.hasText(security.getTicker())) {
-            logger.warn("Cannot save security with empty ticker");
+            logger.warning("Cannot save security with empty ticker");
             throw new IllegalArgumentException("Security ticker cannot be empty");
         }
         
         if (security.getType() == null) {
-            logger.warn("Cannot save security with null type");
+            logger.warning("Cannot save security with null type");
             throw new IllegalArgumentException("Security type cannot be null");
         }
         
