@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,25 +59,51 @@ public class MarketDataService {
             return;
         }
         
+        // Initialize stocks with configuration, skip unconfigured ones
+        int initializedCount = 0;
+        int skippedCount = 0;
+        
         for (Security stock : stocks) {
-            try {
-                BigDecimal initialPrice = getInitialPrice(stock.getTicker());
-                if (initialPrice.compareTo(BigDecimal.ZERO) <= 0) {
-                    logger.warn("Invalid initial price for {}: {}", stock.getTicker(), initialPrice);
-                    continue;
-                }
-                
-                initialPrices.put(stock.getTicker(), initialPrice);
-                currentPrices.put(stock.getTicker(), initialPrice);
-                randomSeeds.put(stock.getTicker(), new AtomicLong(System.nanoTime() + stock.getTicker().hashCode()));
-                
-                logger.info("Initialized {} with price: ${}", stock.getTicker(), initialPrice);
-            } catch (Exception e) {
-                logger.error("Error initializing price for {}: {}", stock.getTicker(), e.getMessage(), e);
+            if (tryInitializeStock(stock)) {
+                initializedCount++;
+            } else {
+                skippedCount++;
             }
         }
         
-        logger.info("Market data service initialized with {} stocks", stocks.size());
+        if (skippedCount > 0) {
+            logger.warn("Skipped {} stocks due to missing or invalid price configurations", skippedCount);
+        }
+        
+        if (initializedCount == 0) {
+            logger.error("No stocks could be initialized - check your price configurations");
+            throw new IllegalStateException("No stocks could be initialized. Please check your price configurations in application.yml");
+        }
+        
+        logger.info("Market data service initialized successfully with {} stocks ({} skipped)", 
+                   initializedCount, skippedCount);
+    }
+    
+    /**
+     * Attempts to initialize a single stock, returns true if successful, false if skipped
+     */
+    private boolean tryInitializeStock(Security stock) {
+        String ticker = stock.getTicker();
+        
+        try {
+            BigDecimal initialPrice = parseInitialPrice(ticker);
+            
+            initialPrices.put(ticker, initialPrice);
+            currentPrices.put(ticker, initialPrice);
+            randomSeeds.put(ticker, new AtomicLong(System.nanoTime() + ticker.hashCode()));
+            
+            logger.info("Initialized {} with price: ${}", ticker, initialPrice);
+            return true;
+            
+        } catch (Exception e) {
+            logger.warn("Skipping stock {} due to configuration issue: {}", ticker, e.getMessage());
+            return false;
+        }
     }
     
     public BigDecimal getCurrentPrice(String ticker) {
@@ -156,27 +183,33 @@ public class MarketDataService {
     }
     
     /**
-     * Gets initial price for a stock from configuration
+     * Parses and validates initial price for a stock from configuration.
+     * Throws exception if price is missing, invalid, or non-positive.
      */
-    private BigDecimal getInitialPrice(String ticker) {
+    private BigDecimal parseInitialPrice(String ticker) {
+        String priceStr = initialPricesConfig.get(ticker.toUpperCase());
+        
+        if (priceStr == null || priceStr.trim().isEmpty()) {
+            throw new IllegalStateException("No initial price configured for stock: " + ticker);
+        }
+        
         try {
-            // Get price directly from the configured map
-            String priceStr = initialPricesConfig.get(ticker.toUpperCase());
-            
-            if (priceStr != null) {
-                return new BigDecimal(priceStr);
-            } else {
-                // Return default price if not configured
-                logger.debug("No initial price configured for {}, using default $100.00", ticker);
-                return new BigDecimal("100.00");
-            }
+            BigDecimal price = new BigDecimal(priceStr.trim());
+            validatePriceIsPositive(ticker, price);
+            return price;
         } catch (NumberFormatException e) {
-            String priceStr = initialPricesConfig.get(ticker.toUpperCase());
-            logger.warn("Invalid price format for {}: {}, using default", ticker, priceStr, e.getMessage());
-            return new BigDecimal("100.00");
-        } catch (Exception e) {
-            logger.warn("Error getting initial price for {}, using default: {}", ticker, e.getMessage());
-            return new BigDecimal("100.00");
+            throw new IllegalArgumentException(
+                "Invalid price format for " + ticker + ": '" + priceStr + "'. Must be a valid decimal number.", e);
+        }
+    }
+    
+    /**
+     * Validates that price is positive
+     */
+    private void validatePriceIsPositive(String ticker, BigDecimal price) {
+        if (price.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException(
+                "Initial price must be positive for " + ticker + ", got: " + price);
         }
     }
     
@@ -248,3 +281,4 @@ public class MarketDataService {
         logger.debug("Market Data Snapshot (Protobuf):\n{}", ProtobufUtils.toReadableString(snapshot));
     }
 }
+

@@ -367,6 +367,13 @@ The application uses YAML configuration format (`application.yml`) for better re
 - **Database**: H2 (in-memory, configurable via `spring.datasource.*`)
 - **Logging**: Structured logging with different levels for components (configurable via `logging.level.*`)
 
+### ⚠️ **Configuration Requirements**
+- **Stocks without price configurations will be skipped** during initialization
+- **Application requires at least one valid stock** to start successfully
+- **No default prices** - prevents silent configuration errors and ensures accurate portfolio valuations
+- **Price validation** - all configured prices must be positive decimal numbers
+- **Flexible approach** - allows partial configurations for gradual rollout or testing
+
 
 ## Thread Safety Implementation
 
