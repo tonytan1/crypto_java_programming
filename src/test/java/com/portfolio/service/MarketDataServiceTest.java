@@ -37,7 +37,6 @@ public class MarketDataServiceTest {
         MockitoAnnotations.openMocks(this);
         marketDataService = new MarketDataService();
         
-        // Use reflection to inject the mocked dependencies
         try {
             java.lang.reflect.Field repositoryField = MarketDataService.class.getDeclaredField("securityRepository");
             repositoryField.setAccessible(true);
@@ -50,7 +49,6 @@ public class MarketDataServiceTest {
             throw new RuntimeException("Failed to inject mock dependencies", e);
         }
         
-        // Create test stocks
         testStocks = createTestStocks();
         when(securityRepository.findByType(SecurityType.STOCK)).thenReturn(testStocks);
     }

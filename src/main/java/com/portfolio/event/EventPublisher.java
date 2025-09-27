@@ -18,9 +18,6 @@ public class EventPublisher {
     @Autowired
     private EventBus eventBus;
     
-    /**
-     * Publishes a market data update event.
-     */
     public void publishMarketDataUpdate(String ticker, BigDecimal currentPrice, BigDecimal previousPrice) {
         PortfolioEventProtos.MarketDataUpdate.Builder marketDataBuilder = 
             PortfolioEventProtos.MarketDataUpdate.newBuilder()
@@ -28,7 +25,6 @@ public class EventPublisher {
                 .setPrice(currentPrice.doubleValue())
                 .setPreviousPrice(previousPrice != null ? previousPrice.doubleValue() : 0.0);
         
-        // Calculate changes
         if (previousPrice != null && previousPrice.compareTo(BigDecimal.ZERO) != 0) {
             BigDecimal absoluteChange = currentPrice.subtract(previousPrice);
             BigDecimal percentageChange = absoluteChange.divide(previousPrice, 6, BigDecimal.ROUND_HALF_UP)
@@ -57,9 +53,6 @@ public class EventPublisher {
         eventBus.publishEvent(event);
     }
     
-    /**
-     * Publishes a portfolio recalculation event.
-     */
     public void publishPortfolioRecalculated(BigDecimal totalNav, int positionCount, long calculationTimeMs) {
         PortfolioEventProtos.PortfolioSummary.Builder summaryBuilder = 
             PortfolioEventProtos.PortfolioSummary.newBuilder()
@@ -80,9 +73,6 @@ public class EventPublisher {
         eventBus.publishEvent(event);
     }
     
-    /**
-     * Publishes a position update event.
-     */
     public void publishPositionUpdate(String symbol, BigDecimal oldSize, BigDecimal newSize, 
                                     PortfolioEventProtos.UpdateAction action, String reason) {
         PortfolioEventProtos.PositionUpdate positionUpdate = 

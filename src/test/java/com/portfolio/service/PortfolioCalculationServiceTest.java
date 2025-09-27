@@ -45,10 +45,7 @@ public class PortfolioCalculationServiceTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         
-        // Create the service under test
         portfolioCalculationService = new PortfolioCalculationService();
-        
-        // Use reflection to inject dependencies
         try {
             java.lang.reflect.Field marketDataServiceField = PortfolioCalculationService.class.getDeclaredField("marketDataService");
             marketDataServiceField.setAccessible(true);
@@ -65,10 +62,7 @@ public class PortfolioCalculationServiceTest {
             throw new RuntimeException("Failed to inject dependencies", e);
         }
         
-        // Create test portfolio
         testPortfolio = createTestPortfolio();
-        
-        // Ensure portfolio is properly initialized
         assertNotNull(testPortfolio);
         assertNotNull(testPortfolio.getPositions());
         assertEquals(3, testPortfolio.getPositions().size());
@@ -77,20 +71,16 @@ public class PortfolioCalculationServiceTest {
     private Portfolio createTestPortfolio() {
         Portfolio portfolio = new Portfolio();
         
-        // Create test positions
         List<Position> positions = new ArrayList<>();
         
-        // Stock position
         Security aaplStock = createStock("AAPL", new BigDecimal("150.00"));
         Position aaplPosition = new Position("AAPL", new BigDecimal("100"), aaplStock);
         positions.add(aaplPosition);
         
-        // Call option position
         Security aaplCall = createCallOption("AAPL-CALL-150-2024", new BigDecimal("150.00"));
         Position callPosition = new Position("AAPL-CALL-150-2024", new BigDecimal("10"), aaplCall);
         positions.add(callPosition);
         
-        // Put option position
         Security aaplPut = createPutOption("AAPL-PUT-150-2024", new BigDecimal("150.00"));
         Position putPosition = new Position("AAPL-PUT-150-2024", new BigDecimal("5"), aaplPut);
         positions.add(putPosition);

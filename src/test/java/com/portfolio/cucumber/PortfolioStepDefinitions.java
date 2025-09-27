@@ -37,7 +37,6 @@ public class PortfolioStepDefinitions {
     public void thePortfolioSystemIsInitialized() {
         context = new AnnotationConfigApplicationContext(PortfolioApplication.class);
         portfolioManagerService = context.getBean(PortfolioManagerService.class);
-        // OptionPricingService is not needed for portfolio tests
         marketDataService = context.getBean(MarketDataService.class);
     }
 
