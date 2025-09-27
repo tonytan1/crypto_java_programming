@@ -2,13 +2,17 @@ package com.portfolio.repository;
 
 import com.portfolio.model.Security;
 import com.portfolio.model.SecurityType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.StringUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +21,8 @@ import java.util.Optional;
  */
 @Repository
 public class SecurityRepository {
+    
+    private static final Logger logger = LoggerFactory.getLogger(SecurityRepository.class);
     
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -53,26 +59,56 @@ public class SecurityRepository {
     
     /**
      * Finds a security by its ticker symbol
+     * JdbcTemplate automatically prevents SQL injection with parameterized queries
      */
     public Optional<Security> findByTicker(String ticker) {
-        List<Security> securities = jdbcTemplate.query(SELECT_BY_TICKER, securityRowMapper, ticker);
+        if (!StringUtils.hasText(ticker)) {
+            logger.warn("Empty ticker provided for database query");
+            return Optional.empty();
+        }
+        
+        // JdbcTemplate parameterized queries automatically prevent SQL injection
+        List<Security> securities = jdbcTemplate.query(SELECT_BY_TICKER, securityRowMapper, ticker.trim().toUpperCase());
         return securities.isEmpty() ? Optional.empty() : Optional.of(securities.get(0));
     }
     
     /**
      * Finds all securities of a specific type
+     * JdbcTemplate parameterized queries automatically prevent SQL injection
      */
     public List<Security> findByType(SecurityType type) {
+        if (type == null) {
+            logger.warn("SecurityType cannot be null");
+            return new ArrayList<>();
+        }
+        
         return jdbcTemplate.query(SELECT_BY_TYPE, securityRowMapper, type.name());
     }
     
     /**
      * Saves a new security to the database
+     * JPA validation annotations handle input validation
      */
     public Security save(Security security) {
+        if (security == null) {
+            logger.warn("Cannot save null security");
+            throw new IllegalArgumentException("Security cannot be null");
+        }
+        
+        // Basic validation using Spring's StringUtils
+        if (!StringUtils.hasText(security.getTicker())) {
+            logger.warn("Cannot save security with empty ticker");
+            throw new IllegalArgumentException("Security ticker cannot be empty");
+        }
+        
+        if (security.getType() == null) {
+            logger.warn("Cannot save security with null type");
+            throw new IllegalArgumentException("Security type cannot be null");
+        }
+        
         if (security.getId() == null) {
             jdbcTemplate.update(INSERT,
-                    security.getTicker(),
+                    security.getTicker().trim().toUpperCase(),
                     security.getType().name(),
                     security.getStrike(),
                     security.getMaturity(),
@@ -84,7 +120,7 @@ public class SecurityRepository {
             return saved.orElse(security);
         } else {
             jdbcTemplate.update(UPDATE,
-                    security.getTicker(),
+                    security.getTicker().trim().toUpperCase(),
                     security.getType().name(),
                     security.getStrike(),
                     security.getMaturity(),

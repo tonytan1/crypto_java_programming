@@ -1,2 +1,0 @@
--- This file is executed after schema.sql
--- Additional data can be added here if needed

@@ -17,7 +17,7 @@ public class Security {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "ticker", nullable = false, unique = true)
+    @Column(name = "ticker", nullable = false, unique = true, length = 50)
     private String ticker;
     
     @Enumerated(EnumType.STRING)

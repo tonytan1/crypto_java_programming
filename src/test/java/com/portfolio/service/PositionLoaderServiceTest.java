@@ -74,7 +74,7 @@ public class PositionLoaderServiceTest {
         
         // AAPL Call Option
         Security aaplCall = new Security();
-        aaplCall.setTicker("AAPL_CALL_150_2024");
+        aaplCall.setTicker("AAPL-CALL-150-2024");
         aaplCall.setType(SecurityType.CALL);
         aaplCall.setStrike(new BigDecimal("150.00"));
         aaplCall.setMaturity(LocalDate.of(2024, 12, 20));
@@ -84,7 +84,7 @@ public class PositionLoaderServiceTest {
         
         // AAPL Put Option
         Security aaplPut = new Security();
-        aaplPut.setTicker("AAPL_PUT_150_2024");
+        aaplPut.setTicker("AAPL-PUT-150-2024");
         aaplPut.setType(SecurityType.PUT);
         aaplPut.setStrike(new BigDecimal("150.00"));
         aaplPut.setMaturity(LocalDate.of(2024, 12, 20));
@@ -109,8 +109,8 @@ public class PositionLoaderServiceTest {
         try (FileWriter writer = new FileWriter(csvFile)) {
             writer.write("Symbol,Size\n");
             writer.write("AAPL,100\n");
-            writer.write("AAPL_CALL_150_2024,10\n");
-            writer.write("AAPL_PUT_150_2024,5\n");
+            writer.write("AAPL-CALL-150-2024,10\n");
+            writer.write("AAPL-PUT-150-2024,5\n");
         }
         
         List<Position> positions = positionLoaderService.loadPositions(csvFile.getAbsolutePath());
@@ -127,14 +127,14 @@ public class PositionLoaderServiceTest {
         
         // Verify second position (AAPL call)
         Position callPosition = positions.get(1);
-        assertEquals("AAPL_CALL_150_2024", callPosition.getSymbol());
+        assertEquals("AAPL-CALL-150-2024", callPosition.getSymbol());
         assertEquals(new BigDecimal("10"), callPosition.getPositionSize());
         assertNotNull(callPosition.getSecurity());
         assertEquals(SecurityType.CALL, callPosition.getSecurity().getType());
         
         // Verify third position (AAPL put)
         Position putPosition = positions.get(2);
-        assertEquals("AAPL_PUT_150_2024", putPosition.getSymbol());
+        assertEquals("AAPL-PUT-150-2024", putPosition.getSymbol());
         assertEquals(new BigDecimal("5"), putPosition.getPositionSize());
         assertNotNull(putPosition.getSecurity());
         assertEquals(SecurityType.PUT, putPosition.getSecurity().getType());
@@ -147,7 +147,7 @@ public class PositionLoaderServiceTest {
         try (FileWriter writer = new FileWriter(csvFile)) {
             writer.write("Symbol,Size,Type\n");
             writer.write("AAPL,100,STOCK\n");
-            writer.write("AAPL_CALL_150_2024,10,CALL\n");
+            writer.write("AAPL-CALL-150-2024,10,CALL\n");
         }
         
         List<Position> positions = positionLoaderService.loadPositions(csvFile.getAbsolutePath());
@@ -192,7 +192,7 @@ public class PositionLoaderServiceTest {
             writer.write("Symbol,Size\n");
             writer.write("AAPL,100\n");
             writer.write("UNKNOWN_STOCK,50\n");
-            writer.write("AAPL_CALL_150_2024,10\n");
+            writer.write("AAPL-CALL-150-2024,10\n");
         }
         
         // Mock repository to return null for unknown stock
@@ -206,7 +206,7 @@ public class PositionLoaderServiceTest {
         // Verify positions with known securities have security definitions
         assertNotNull(positions.get(0).getSecurity()); // AAPL
         assertNull(positions.get(1).getSecurity());    // UNKNOWN_STOCK
-        assertNotNull(positions.get(2).getSecurity()); // AAPL_CALL_150_2024
+        assertNotNull(positions.get(2).getSecurity()); // AAPL-CALL-150-2024
     }
 
     @Test
@@ -234,7 +234,7 @@ public class PositionLoaderServiceTest {
         try (FileWriter writer = new FileWriter(csvFile)) {
             writer.write("Symbol,Size\n");
             writer.write("AAPL,100\n");
-            writer.write("AAPL_CALL_150_2024,-10\n"); // Short position
+            writer.write("AAPL-CALL-150-2024,-10\n"); // Short position
         }
         
         List<Position> positions = positionLoaderService.loadPositions(csvFile.getAbsolutePath());
@@ -254,7 +254,7 @@ public class PositionLoaderServiceTest {
         try (FileWriter writer = new FileWriter(csvFile)) {
             writer.write("Symbol,Size\n");
             writer.write("AAPL,0\n");
-            writer.write("AAPL_CALL_150_2024,10\n");
+            writer.write("AAPL-CALL-150-2024,10\n");
         }
         
         List<Position> positions = positionLoaderService.loadPositions(csvFile.getAbsolutePath());
@@ -275,7 +275,7 @@ public class PositionLoaderServiceTest {
             writer.write("Symbol,Size\n");
             writer.write("AAPL,100\n");
             writer.write("UNKNOWN_STOCK,50\n");
-            writer.write("AAPL_CALL_150_2024,10\n");
+            writer.write("AAPL-CALL-150-2024,10\n");
         }
         
         // Mock repository to return null for unknown stock
@@ -307,7 +307,7 @@ public class PositionLoaderServiceTest {
             writer.write("Symbol,Size\n");
             writer.write("AAPL,100\n");
             writer.write("INVALID_LINE_WITHOUT_COMMA\n");
-            writer.write("AAPL_CALL_150_2024,10\n");
+            writer.write("AAPL-CALL-150-2024,10\n");
         }
         
         // Should handle malformed lines gracefully
@@ -325,7 +325,7 @@ public class PositionLoaderServiceTest {
         try (FileWriter writer = new FileWriter(csvFile)) {
             writer.write("Symbol,Size\n");
             writer.write("AAPL,1000000\n");
-            writer.write("AAPL_CALL_150_2024,999999\n");
+            writer.write("AAPL-CALL-150-2024,999999\n");
         }
         
         List<Position> positions = positionLoaderService.loadPositions(csvFile.getAbsolutePath());
@@ -345,7 +345,7 @@ public class PositionLoaderServiceTest {
         try (FileWriter writer = new FileWriter(csvFile)) {
             writer.write("Symbol,Size\n");
             writer.write(" AAPL , 100 \n");
-            writer.write(" AAPL_CALL_150_2024 , 10 \n");
+            writer.write(" AAPL-CALL-150-2024 , 10 \n");
         }
         
         List<Position> positions = positionLoaderService.loadPositions(csvFile.getAbsolutePath());

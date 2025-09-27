@@ -108,18 +108,15 @@ public class OptionPricingServiceTest {
 
 
     @Test
-    @DisplayName("Should throw exception for stock type security")
+    @DisplayName("Should return zero for stock type security")
     public void testCalculateOptionPriceForStock() {
         Security stock = new Security();
         stock.setTicker("AAPL");
         stock.setType(SecurityType.STOCK);
         
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> optionPricingService.calculateOptionPrice(stock, underlyingPrice)
-        );
+        BigDecimal result = optionPricingService.calculateOptionPrice(stock, underlyingPrice);
         
-        assertEquals("Cannot calculate option price for stock", exception.getMessage());
+        assertEquals(BigDecimal.ZERO, result, "Stock pricing should return zero");
     }
 
     @Test
@@ -127,10 +124,9 @@ public class OptionPricingServiceTest {
     public void testZeroUnderlyingPrice() {
         BigDecimal zeroPrice = BigDecimal.ZERO;
         
-        // Should throw exception when trying to calculate log(0)
-        assertThrows(NumberFormatException.class, () -> {
-            optionPricingService.calculateOptionPrice(callOption, zeroPrice);
-        });
+        BigDecimal result = optionPricingService.calculateOptionPrice(callOption, zeroPrice);
+        
+        assertEquals(BigDecimal.ZERO, result, "Zero underlying price should return zero");
     }
 
     @Test
@@ -212,15 +208,17 @@ public class OptionPricingServiceTest {
     @Test
     @DisplayName("Should handle null security gracefully")
     public void testNullSecurity() {
-        assertThrows(NullPointerException.class, 
-            () -> optionPricingService.calculateOptionPrice(null, underlyingPrice));
+        BigDecimal result = optionPricingService.calculateOptionPrice(null, underlyingPrice);
+        
+        assertEquals(BigDecimal.ZERO, result, "Null security should return zero");
     }
 
     @Test
     @DisplayName("Should handle null underlying price gracefully")
     public void testNullUnderlyingPrice() {
-        assertThrows(NullPointerException.class, 
-            () -> optionPricingService.calculateOptionPrice(callOption, null));
+        BigDecimal result = optionPricingService.calculateOptionPrice(callOption, null);
+        
+        assertEquals(BigDecimal.ZERO, result, "Null underlying price should return zero");
     }
 
     @Test

@@ -47,15 +47,29 @@ public class MarketDataService {
     
     public void initializePrices() {
         logger.info("Initializing market data service...");
+        
         List<Security> stocks = securityRepository.findByType(SecurityType.STOCK);
+        if (stocks.isEmpty()) {
+            logger.warn("No stocks found in database");
+            return;
+        }
         
         for (Security stock : stocks) {
-            BigDecimal initialPrice = getInitialPrice(stock.getTicker());
-            initialPrices.put(stock.getTicker(), initialPrice);
-            currentPrices.put(stock.getTicker(), initialPrice);
-            randomSeeds.put(stock.getTicker(), new AtomicLong(System.nanoTime() + stock.getTicker().hashCode()));
-            
-            logger.info("Initialized {} with price: ${}", stock.getTicker(), initialPrice);
+            try {
+                BigDecimal initialPrice = getInitialPrice(stock.getTicker());
+                if (initialPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                    logger.warn("Invalid initial price for {}: {}", stock.getTicker(), initialPrice);
+                    continue;
+                }
+                
+                initialPrices.put(stock.getTicker(), initialPrice);
+                currentPrices.put(stock.getTicker(), initialPrice);
+                randomSeeds.put(stock.getTicker(), new AtomicLong(System.nanoTime() + stock.getTicker().hashCode()));
+                
+                logger.info("Initialized {} with price: ${}", stock.getTicker(), initialPrice);
+            } catch (Exception e) {
+                logger.error("Error initializing price for {}: {}", stock.getTicker(), e.getMessage(), e);
+            }
         }
         
         logger.info("Market data service initialized with {} stocks", stocks.size());
