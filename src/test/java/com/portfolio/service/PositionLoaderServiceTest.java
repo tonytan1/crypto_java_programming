@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -117,8 +116,8 @@ public class PositionLoaderServiceTest {
             assertNotNull(parts);
             // Should not throw exceptions during parsing
             assertDoesNotThrow(() -> {
-                String symbol = parts.length > 0 ? parts[0].trim() : "";
-                String sizeStr = parts.length > 1 ? parts[1].trim() : "0";
+                if (parts.length > 0) parts[0].trim();
+                if (parts.length > 1) parts[1].trim();
             });
         }
     }

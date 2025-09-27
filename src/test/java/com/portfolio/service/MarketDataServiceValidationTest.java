@@ -43,7 +43,7 @@ public class MarketDataServiceValidationTest {
     @Test
     @DisplayName("Should skip stock when price is not configured")
     public void testSkipStockWhenPriceNotConfigured() {
-        Security stock = createTestStock("UNCONFIGURED");
+        createTestStock("UNCONFIGURED");
         
         // Test that the service handles missing price configuration
         BigDecimal price = marketDataService.getCurrentPrice("UNCONFIGURED");
@@ -53,8 +53,8 @@ public class MarketDataServiceValidationTest {
     @Test
     @DisplayName("Should skip stock when price is zero or negative")
     public void testSkipStockWhenPriceIsZeroOrNegative() {
-        Security zeroStock = createTestStock("ZERO");
-        Security negativeStock = createTestStock("NEGATIVE");
+        createTestStock("ZERO");
+        createTestStock("NEGATIVE");
         
         // Test handling of zero and negative prices
         BigDecimal zeroPrice = marketDataService.getCurrentPrice("ZERO");
@@ -68,7 +68,7 @@ public class MarketDataServiceValidationTest {
     @Test
     @DisplayName("Should skip stock when price is invalid (non-numeric)")
     public void testSkipStockWhenPriceIsInvalid() {
-        Security invalidStock = createTestStock("INVALID");
+        createTestStock("INVALID");
         
         // Test handling of non-numeric price
         BigDecimal invalidPrice = marketDataService.getCurrentPrice("INVALID");
@@ -78,8 +78,8 @@ public class MarketDataServiceValidationTest {
     @Test
     @DisplayName("Should succeed when all stocks have valid price configurations")
     public void testSucceedWithValidPriceConfigurations() {
-        Security validStock1 = createTestStock("AAPL");
-        Security validStock2 = createTestStock("TSLA");
+        createTestStock("AAPL");
+        createTestStock("TSLA");
         
         // Test that valid prices are handled correctly
         BigDecimal price1 = marketDataService.getCurrentPrice("AAPL");

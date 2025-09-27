@@ -66,7 +66,6 @@ public class CachedSecurityRepositoryTest {
     @Test
     @DisplayName("Should return cached security when available")
     public void testFindByTickerCacheHit() {
-        MockSecurityRepository mockRepo = (MockSecurityRepository) securityRepository;
         MockCacheService mockCache = (MockCacheService) cacheService;
         
         // Setup cache hit
@@ -145,13 +144,6 @@ public class CachedSecurityRepositoryTest {
             this.findByTickerResult = result;
         }
         
-        public void setFindByTypeResult(List<Security> result) {
-            this.findByTypeResult = result;
-        }
-        
-        public void setFindAllResult(List<Security> result) {
-            this.findAllResult = result;
-        }
         
         public void setSaveResult(Security result) {
             this.saveResult = result;
@@ -193,8 +185,6 @@ public class CachedSecurityRepositoryTest {
         private Optional<List<Security>> getSecuritiesByTypeResult = Optional.empty();
         private Optional<List<Security>> getAllSecuritiesResult = Optional.empty();
         private boolean putSecurityByTickerCalled = false;
-        private boolean putSecuritiesByTypeCalled = false;
-        private boolean putAllSecuritiesCalled = false;
         private boolean invalidateSecurityByTickerCalled = false;
         private boolean invalidateSecuritiesByTypeCalled = false;
         private boolean invalidateAllSecuritiesCalled = false;
@@ -204,17 +194,8 @@ public class CachedSecurityRepositoryTest {
             this.getSecurityByTickerResult = result;
         }
         
-        public void setGetSecuritiesByTypeResult(Optional<List<Security>> result) {
-            this.getSecuritiesByTypeResult = result;
-        }
-        
-        public void setGetAllSecuritiesResult(Optional<List<Security>> result) {
-            this.getAllSecuritiesResult = result;
-        }
         
         public boolean wasPutSecurityByTickerCalled() { return putSecurityByTickerCalled; }
-        public boolean wasPutSecuritiesByTypeCalled() { return putSecuritiesByTypeCalled; }
-        public boolean wasPutAllSecuritiesCalled() { return putAllSecuritiesCalled; }
         public boolean wasInvalidateSecurityByTickerCalled() { return invalidateSecurityByTickerCalled; }
         public boolean wasInvalidateSecuritiesByTypeCalled() { return invalidateSecuritiesByTypeCalled; }
         public boolean wasInvalidateAllSecuritiesCalled() { return invalidateAllSecuritiesCalled; }
@@ -242,12 +223,12 @@ public class CachedSecurityRepositoryTest {
         
         @Override
         public void putSecuritiesByType(SecurityType type, List<Security> securities) {
-            putSecuritiesByTypeCalled = true;
+            // Mock implementation
         }
         
         @Override
         public void putAllSecurities(List<Security> securities) {
-            putAllSecuritiesCalled = true;
+            // Mock implementation
         }
         
         @Override
