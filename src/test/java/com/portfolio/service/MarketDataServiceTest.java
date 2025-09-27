@@ -45,6 +45,24 @@ public class MarketDataServiceTest {
             java.lang.reflect.Field eventPublisherField = MarketDataService.class.getDeclaredField("eventPublisher");
             eventPublisherField.setAccessible(true);
             eventPublisherField.set(marketDataService, eventPublisher);
+            
+            // Set up configuration values to prevent null pointer exceptions
+            java.lang.reflect.Field minUpdateIntervalField = MarketDataService.class.getDeclaredField("minUpdateInterval");
+            minUpdateIntervalField.setAccessible(true);
+            minUpdateIntervalField.set(marketDataService, 500L);
+            
+            java.lang.reflect.Field maxUpdateIntervalField = MarketDataService.class.getDeclaredField("maxUpdateInterval");
+            maxUpdateIntervalField.setAccessible(true);
+            maxUpdateIntervalField.set(marketDataService, 2000L);
+            
+            java.lang.reflect.Field initialPricesConfigField = MarketDataService.class.getDeclaredField("initialPricesConfig");
+            initialPricesConfigField.setAccessible(true);
+            Map<String, String> initialPrices = new HashMap<>();
+            initialPrices.put("AAPL", "150.00");
+            initialPrices.put("TSLA", "800.00");
+            initialPrices.put("MSFT", "300.00");
+            initialPricesConfigField.set(marketDataService, initialPrices);
+            
         } catch (Exception e) {
             throw new RuntimeException("Failed to inject mock dependencies", e);
         }

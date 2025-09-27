@@ -81,12 +81,12 @@ public class PortfolioManagerServiceTest {
         aaplStock.setSigma(new BigDecimal("0.25"));
         securities.add(aaplStock);
         
-        // AAPL Call Option
+        // AAPL Call Option (using actual CSV format)
         Security aaplCall = new Security();
-        aaplCall.setTicker("AAPL_CALL_150_2024");
+        aaplCall.setTicker("AAPL-JAN-2026-150-C");
         aaplCall.setType(SecurityType.CALL);
         aaplCall.setStrike(new BigDecimal("150.00"));
-        aaplCall.setMaturity(LocalDate.of(2024, 12, 20));
+        aaplCall.setMaturity(LocalDate.of(2026, 1, 17));
         aaplCall.setMu(new BigDecimal("0.10"));
         aaplCall.setSigma(new BigDecimal("0.25"));
         securities.add(aaplCall);
@@ -104,7 +104,7 @@ public class PortfolioManagerServiceTest {
         
         // AAPL Call Position
         Security aaplCall = testSecurities.get(1);
-        Position callPosition = new Position("AAPL_CALL_150_2024", new BigDecimal("10"), aaplCall);
+        Position callPosition = new Position("AAPL-JAN-2026-150-C", new BigDecimal("10"), aaplCall);
         positions.add(callPosition);
         
         return positions;
@@ -119,11 +119,37 @@ public class PortfolioManagerServiceTest {
     @Test
     @DisplayName("Should initialize portfolio successfully")
     public void testInitializePortfolio() throws IOException {
+        // Create positions with current prices set
+        List<Position> positionsWithPrices = new ArrayList<>();
+        for (Position position : testPositions) {
+            Position positionWithPrice = new Position(position.getSymbol(), position.getPositionSize(), position.getSecurity());
+            if ("AAPL".equals(position.getSymbol())) {
+                positionWithPrice.setCurrentPrice(new BigDecimal("150.00"));
+            } else if ("AAPL-JAN-2026-150-C".equals(position.getSymbol())) {
+                positionWithPrice.setCurrentPrice(new BigDecimal("5.00"));
+            }
+            positionsWithPrices.add(positionWithPrice);
+        }
+        
         // Mock dependencies
-        when(positionLoaderService.loadPositions()).thenReturn(testPositions);
+        when(positionLoaderService.loadPositions()).thenReturn(positionsWithPrices);
         when(positionLoaderService.validatePositions(anyList())).thenReturn(new ArrayList<>());
         when(portfolioCalculationService.getPortfolioSummaryWithChanges(any(Portfolio.class), anyMap(), anyMap(), eq(true)))
             .thenReturn("Portfolio Summary");
+        
+        // Mock calculatePortfolioValues to set current prices
+        doAnswer(invocation -> {
+            Portfolio portfolio = invocation.getArgument(0);
+            for (Position position : portfolio.getPositions()) {
+                if ("AAPL".equals(position.getSymbol())) {
+                    position.setCurrentPrice(new BigDecimal("150.00"));
+                } else if ("AAPL-JAN-2026-150-C".equals(position.getSymbol())) {
+                    position.setCurrentPrice(new BigDecimal("5.00"));
+                }
+            }
+            portfolio.calculateNAV();
+            return null;
+        }).when(portfolioCalculationService).calculatePortfolioValues(any(Portfolio.class));
         
         // Execute
         portfolioManagerService.initializePortfolio();
@@ -259,7 +285,7 @@ public class PortfolioManagerServiceTest {
         
         // Set up current prices in market data service
         when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("155.00"));
-        when(marketDataService.getCurrentPrice("AAPL_CALL_150_2024")).thenReturn(new BigDecimal("6.00"));
+        when(marketDataService.getCurrentPrice("AAPL-JAN-2026-150-C")).thenReturn(new BigDecimal("6.00"));
         
         // Set up portfolio
         Portfolio testPortfolio = new Portfolio();
@@ -303,12 +329,25 @@ public class PortfolioManagerServiceTest {
     @Test
     @DisplayName("Should update previous prices correctly")
     public void testUpdatePreviousPrices() {
-        // Set up portfolio
+        // Set up portfolio with positions that have current prices
         Portfolio testPortfolio = new Portfolio();
-        testPortfolio.setPositions(testPositions);
+        List<Position> positionsWithPrices = new ArrayList<>();
+        
+        // Create positions with current prices set
+        for (Position position : testPositions) {
+            Position positionWithPrice = new Position(position.getSymbol(), position.getPositionSize(), position.getSecurity());
+            if ("AAPL".equals(position.getSymbol())) {
+                positionWithPrice.setCurrentPrice(new BigDecimal("155.00"));
+            } else if ("AAPL-JAN-2026-150-C".equals(position.getSymbol())) {
+                positionWithPrice.setCurrentPrice(new BigDecimal("6.00"));
+            }
+            positionsWithPrices.add(positionWithPrice);
+        }
+        
+        testPortfolio.setPositions(positionsWithPrices);
         
         when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("155.00"));
-        when(marketDataService.getCurrentPrice("AAPL_CALL_150_2024")).thenReturn(new BigDecimal("6.00"));
+        when(marketDataService.getCurrentPrice("AAPL-JAN-2026-150-C")).thenReturn(new BigDecimal("6.00"));
         
         // Use reflection to call private method
         try {
