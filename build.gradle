@@ -18,6 +18,7 @@ dependencies {
     implementation 'org.springframework:spring-context:6.0.15'
     implementation 'org.springframework:spring-jdbc:6.0.15'
     implementation 'org.springframework:spring-tx:6.0.15'
+    implementation 'org.springframework:spring-context-support:6.0.15'
     
     // Jakarta Annotations - Required by Spring 6.x
     implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'

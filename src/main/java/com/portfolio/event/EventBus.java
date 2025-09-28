@@ -2,13 +2,14 @@ package com.portfolio.event;
 
 import com.portfolio.events.PortfolioEventProtos;
 import java.util.logging.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /**
  * Simple in-memory event bus for portfolio events.
@@ -20,8 +21,41 @@ public class EventBus {
     private static final Logger logger = Logger.getLogger(EventBus.class.getName());
     
     private final List<PortfolioEventListener> listeners = new CopyOnWriteArrayList<>();
-    private final ExecutorService executor = Executors.newCachedThreadPool();
     private final AtomicLong eventCounter = new AtomicLong(0);
+    
+    @Value("${portfolio.eventbus.thread-pool.core-pool-size:2}")
+    private int corePoolSize;
+    
+    @Value("${portfolio.eventbus.thread-pool.max-pool-size:8}")
+    private int maxPoolSize;
+    
+    @Value("${portfolio.eventbus.thread-pool.queue-capacity:100}")
+    private int queueCapacity;
+    
+    @Value("${portfolio.eventbus.thread-pool.keep-alive-seconds:60}")
+    private int keepAliveSeconds;
+    
+    @Value("${portfolio.eventbus.thread-pool.thread-name-prefix:event-bus-}")
+    private String threadNamePrefix;
+    
+    @Value("${portfolio.eventbus.thread-pool.wait-for-tasks-to-complete-on-shutdown:true}")
+    private boolean waitForTasksToCompleteOnShutdown;
+    
+    @Value("${portfolio.eventbus.thread-pool.await-termination-seconds:30}")
+    private int awaitTerminationSeconds;
+    
+    @Value("${portfolio.eventbus.thread-pool.rejection-policy:CALLER_RUNS}")
+    private String rejectionPolicy;
+    
+    private ThreadPoolTaskExecutor executor;
+    
+    /**
+     * Initializes the thread pool executor after Spring dependency injection.
+     */
+    @PostConstruct
+    public void initializeExecutor() {
+        this.executor = createEventBusExecutor();
+    }
     
     /**
      * Publishes an event to all registered listeners asynchronously.
@@ -87,6 +121,49 @@ public class EventBus {
      */
     public int getListenerCount() {
         return listeners.size();
+    }
+    
+    /**
+     * Creates a ThreadPoolTaskExecutor configured via YAML properties.
+     */
+    private ThreadPoolTaskExecutor createEventBusExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setQueueCapacity(queueCapacity);
+        executor.setKeepAliveSeconds(keepAliveSeconds);
+        executor.setThreadNamePrefix(threadNamePrefix);
+        executor.setWaitForTasksToCompleteOnShutdown(waitForTasksToCompleteOnShutdown);
+        executor.setAwaitTerminationSeconds(awaitTerminationSeconds);
+        
+        executor.setRejectedExecutionHandler(createRejectionPolicy(rejectionPolicy));
+        
+        executor.initialize();
+        
+        logger.info(String.format("EventBus thread pool initialized: core=%d, max=%d, queue=%d, policy=%s", 
+            corePoolSize, maxPoolSize, queueCapacity, rejectionPolicy));
+        
+        return executor;
+    }
+    
+    /**
+     * Creates rejection policy based on configuration string.
+     */
+    private java.util.concurrent.RejectedExecutionHandler createRejectionPolicy(String policy) {
+        switch (policy.toUpperCase()) {
+            case "CALLER_RUNS":
+                return new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy();
+            case "ABORT":
+                return new java.util.concurrent.ThreadPoolExecutor.AbortPolicy();
+            case "DISCARD":
+                return new java.util.concurrent.ThreadPoolExecutor.DiscardPolicy();
+            case "DISCARD_OLDEST":
+                return new java.util.concurrent.ThreadPoolExecutor.DiscardOldestPolicy();
+            default:
+                logger.warning("Unknown rejection policy: " + policy + ", using CALLER_RUNS");
+                return new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy();
+        }
     }
     
     /**

@@ -13,9 +13,11 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -41,10 +43,44 @@ public class PortfolioManagerService {
     
     // Thread-safe portfolio state using AtomicReference
     private final AtomicReference<Portfolio> portfolioRef = new AtomicReference<>();
-    private ScheduledExecutorService scheduler;
-    private boolean isRunning = false;
     private final Map<String, BigDecimal> initialPrices = new ConcurrentHashMap<>();
     private final Map<String, BigDecimal> initialOptionPrices = new ConcurrentHashMap<>();
+    
+    @Value("${portfolio.portfolio-manager.scheduler.core-pool-size:2}")
+    private int schedulerCorePoolSize;
+    
+    @Value("${portfolio.portfolio-manager.scheduler.thread-name-prefix:portfolio-scheduler-}")
+    private String schedulerThreadNamePrefix;
+    
+    @Value("${portfolio.portfolio-manager.scheduler.wait-for-tasks-to-complete-on-shutdown:true}")
+    private boolean schedulerWaitForTasksToCompleteOnShutdown;
+    
+    @Value("${portfolio.portfolio-manager.scheduler.await-termination-seconds:10}")
+    private int schedulerAwaitTerminationSeconds;
+    
+    private ThreadPoolTaskScheduler scheduler;
+    private boolean isRunning = false;
+    
+    /**
+     * Initializes the scheduler after Spring dependency injection.
+     */
+    @PostConstruct
+    public void initializeScheduler() {
+        this.scheduler = createScheduler();
+    }
+    
+    /**
+     * Creates a ThreadPoolTaskScheduler configured via YAML properties.
+     */
+    private ThreadPoolTaskScheduler createScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(schedulerCorePoolSize);
+        scheduler.setThreadNamePrefix(schedulerThreadNamePrefix);
+        scheduler.setWaitForTasksToCompleteOnShutdown(schedulerWaitForTasksToCompleteOnShutdown);
+        scheduler.setAwaitTerminationSeconds(schedulerAwaitTerminationSeconds);
+        scheduler.initialize();
+        return scheduler;
+    }
     
     /**
      * Initializes the portfolio by loading positions from CSV
@@ -94,22 +130,23 @@ public class PortfolioManagerService {
         logger.info("Starting real-time portfolio monitoring...");
         isRunning = true;
         
-        scheduler = Executors.newScheduledThreadPool(2);
-        
+        // Schedule portfolio updates every 1 second
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 updatePortfolio();
             } catch (Exception e) {
                 logger.severe("Error updating portfolio: " + e.getMessage());
             }
-        }, 0, 1, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(() -> {
+        }, Duration.ofSeconds(1));
+        
+        // Schedule portfolio summary display every 5 seconds (starting after 2 seconds delay)
+        scheduler.scheduleWithFixedDelay(() -> {
             try {
                 displayPortfolioSummary();
             } catch (Exception e) {
                 logger.severe("Error displaying portfolio summary: " + e.getMessage());
             }
-        }, 2, 5, TimeUnit.SECONDS);
+        }, java.time.Instant.now().plusSeconds(2), Duration.ofSeconds(5));
     }
     
     public void stopRealTimeMonitoring() {
@@ -123,29 +160,32 @@ public class PortfolioManagerService {
         
         if (scheduler != null) {
             scheduler.shutdown();
-            try {
-                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    scheduler.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                scheduler.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
         }
     }
     
-        /**
-         * Updates the portfolio with new market data
-         */
-        public void updatePortfolio() {
-            Portfolio portfolio = portfolioRef.get();
-            if (portfolio != null) {
-                portfolioCalculationService.updateMarketDataAndRecalculate(portfolio);
-                
-                // Log market data in Protobuf format for debugging
-                marketDataService.logMarketDataSnapshot(initialPrices);
-            }
+    /**
+     * Clean shutdown of the scheduler when the application stops.
+     */
+    @PreDestroy
+    public void shutdown() {
+        if (scheduler != null) {
+            logger.info("Shutting down portfolio manager scheduler...");
+            scheduler.shutdown();
         }
+    }
+    
+    /**
+     * Updates the portfolio with new market data
+     */
+    public void updatePortfolio() {
+        Portfolio portfolio = portfolioRef.get();
+        if (portfolio != null) {
+            portfolioCalculationService.updateMarketDataAndRecalculate(portfolio);
+            
+            // Log market data in Protobuf format for debugging
+            marketDataService.logMarketDataSnapshot(initialPrices);
+        }
+    }
     
     private void displayPortfolioSummary() {
         Portfolio portfolio = portfolioRef.get();
@@ -245,10 +285,4 @@ public class PortfolioManagerService {
         logger.info("Initial prices set for " + initialPrices.size() + " stocks and " + initialOptionPrices.size() + " options");
     }
     
-    /**
-     * Shuts down the service
-     */
-    public void shutdown() {
-        stopRealTimeMonitoring();
-    }
 }

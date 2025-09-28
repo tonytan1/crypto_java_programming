@@ -19,6 +19,26 @@ portfolio:
       # GOOGL: "2800.00"
       # MSFT: "400.00"
       # AMZN: "3500.00"
+  
+  # Event Bus Thread Pool Configuration
+  eventbus:
+    thread-pool:
+      core-pool-size: 2
+      max-pool-size: 8
+      queue-capacity: 100
+      keep-alive-seconds: 60
+      thread-name-prefix: "event-bus-"
+      wait-for-tasks-to-complete-on-shutdown: true
+      await-termination-seconds: 30
+      rejection-policy: "CALLER_RUNS"  # Options: CALLER_RUNS, ABORT, DISCARD, DISCARD_OLDEST
+  
+  # Portfolio Manager Scheduled Thread Pool Configuration
+  portfolio-manager:
+    scheduler:
+      core-pool-size: 2
+      thread-name-prefix: "portfolio-scheduler-"
+      wait-for-tasks-to-complete-on-shutdown: true
+      await-termination-seconds: 10
 
 # ============================================================================
 # Spring Framework Configuration
