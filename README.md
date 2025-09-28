@@ -20,6 +20,7 @@ This system provides traders with real-time portfolio valuation capabilities, ca
 - **Event-Driven Architecture**: Real-time event streaming with EventBus and multiple subscribers
 - **Multi-Tier Caching**: Google Guava Cache with 4 specialized caches for security data
 - **Enterprise Thread Safety**: ReadWriteLock, AtomicReference, ConcurrentHashMap, and AtomicLong+LCG
+- **Safe Thread Pools**: YAML-configured bounded thread pools using Spring's ThreadPoolTaskExecutor and ThreadPoolTaskScheduler
 - **High Performance**: Optimized for read-heavy workloads with parallel read operations and intelligent caching
 - **Modern Java**: Java 17 with modern language features (Switch Expressions, Records, etc.)
 - **YAML Configuration**: Human-readable configuration format for better maintainability
@@ -721,13 +722,13 @@ The system provides real-time console output showing:
 - **Mock Data**: No real market data integration required
 - **Embedded Database**: No external database dependencies, for simplicity and performance concern, use jdbc template instead of MyBatis-Spring integration.
 - **Limited Dependencies**: Only specified third-party libraries allowed (Spring, Guava, Protobuf, JUnit, Cucumber, H2)
-- **Memory Safety**: AtomicLong + LCG eliminates ThreadLocal memory leak risks
-- **Thread Safety**: Enterprise-grade concurrency with ReadWriteLock, AtomicReference, and ConcurrentHashMap
-- **Independent Random Generation**: Each stock has its own random number generator to avoid correlation
-- **Random Number Fix**: Fixed "3 UP, 3 DOWN" pattern by giving each stock independent random seeds
+- **Thread Safety**: Enterprise-grade concurrency with ReadWriteLock, AtomicReference, ConcurrentHashMap, and YAML-configured bounded thread pools
+- **Memory Safety**: AtomicLong + LCG eliminates ThreadLocal memory leak risks （every thread have one long living random, it may cause memory issue when high concurrent ）
+- **Independent Random Generation to fix Random Number**: Each stock has its own random number generator to avoid correlation and fixed "3 UP, 3 DOWN" pattern by giving each stock independent random seeds
+- **Add Cache layer for Security**: add cache layer to security table by type and symbol 
+- **Thread Pool Best Practices**: Replaced unsafe Executors.newCachedThreadPool() and Executors.newScheduledThreadPool() with Spring's ThreadPoolTaskExecutor and ThreadPoolTaskScheduler, all configured via YAML for better resource management and production safety
 - **Unit Testing**: Comprehensive test suite covering core business logic including portfolio calculations, option pricing, market data simulation, and thread safety. All tests pass successfully.
 - **Robust Error Handling**: Comprehensive error handling and validation throughout the application 
-- **Add Cache layer for Security**: add cache layer to security table by type and symbol 
 
 
 ## License
