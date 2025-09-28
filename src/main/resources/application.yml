@@ -44,15 +44,3 @@ spring:
       ddl-auto: none  # We use schema.sql for DDL
     show-sql: false   # Set to true for SQL debugging
 
-# ============================================================================
-# Logging Configuration
-# ============================================================================
-# Note: Logging is configured in src/main/resources/logging.properties
-# This file configures java.util.logging.Logger to output logs to:
-# - Console (INFO level and above)
-# - Files in logs/ folder (ALL levels with rotation)
-# 
-# The logging.properties file contains detailed configuration for:
-# - Log file rotation (5 files, 10MB each)
-# - Package-specific log levels
-# - Formatting and encoding
