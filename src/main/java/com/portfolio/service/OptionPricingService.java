@@ -61,7 +61,8 @@ public class OptionPricingService {
             };
             
         } catch (Exception e) {
-            logger.severe("Error calculating option price for " + (option != null ? option.getTicker() : "null") + ": " + e.getMessage());
+            logger.severe(String.format("Error calculating option price for %s: %s", 
+                option != null ? option.getTicker() : "null", e.getMessage()));
             return BigDecimal.ZERO; // Return safe default instead of throwing
         }
     }

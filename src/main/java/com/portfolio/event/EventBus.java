@@ -51,12 +51,13 @@ public class EventBus {
                 try {
                     listener.onEvent(finalEvent);
                 } catch (Exception e) {
-                    logger.severe("Error delivering event to listener " + listener.getClass().getSimpleName() + ": " + e.getMessage());
+                    logger.severe(String.format("Error delivering event to listener %s: %s", 
+                        listener.getClass().getSimpleName(), e.getMessage()));
                 }
             });
         }
         
-        logger.fine("Published event " + finalEvent.getType() + " to " + listeners.size() + " listeners");
+        logger.fine(String.format("Published event %s to %d listeners", finalEvent.getType(), listeners.size()));
     }
     
     /**

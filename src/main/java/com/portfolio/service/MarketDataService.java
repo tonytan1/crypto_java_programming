@@ -70,7 +70,7 @@ public class MarketDataService {
         }
         
         if (skippedCount > 0) {
-            logger.warning("Skipped " + skippedCount + " stocks due to missing or invalid price configurations");
+            logger.warning(String.format("Skipped %d stocks due to missing or invalid price configurations", skippedCount));
         }
         
         if (initializedCount == 0) {
@@ -78,7 +78,8 @@ public class MarketDataService {
             throw new IllegalStateException("No stocks could be initialized. Please check your price configurations in application.yml");
         }
         
-        logger.info("Market data service initialized successfully with " + initializedCount + " stocks (" + skippedCount + " skipped)");
+        logger.info(String.format("Market data service initialized successfully with %d stocks (%d skipped)", 
+            initializedCount, skippedCount));
     }
     
     /**
@@ -94,11 +95,11 @@ public class MarketDataService {
             currentPrices.put(ticker, initialPrice);
             randomSeeds.put(ticker, new AtomicLong(System.nanoTime() + ticker.hashCode()));
             
-            logger.info("Initialized " + ticker + " with price: $" + initialPrice);
+            logger.info(String.format("Initialized %s with price: $%s", ticker, initialPrice));
             return true;
             
         } catch (Exception e) {
-            logger.warning("Skipping stock " + ticker + " due to configuration issue: " + e.getMessage());
+            logger.severe(String.format("Skipping stock %s due to configuration issue: %s", ticker, e.getMessage()));
             return false;
         }
     }

@@ -85,7 +85,8 @@ public class PortfolioApplication {
         // Register event listeners
         eventBus.subscribe(consoleListener);
         
-        logger.info("Event system initialized with " + eventBus.getListenerCount() + " listeners");
+        logger.info(String.format("Event system initialized with %d listeners", eventBus.getListenerCount()));
+        
         
         // Publish system started event
         eventPublisher.publishSystemStarted();
