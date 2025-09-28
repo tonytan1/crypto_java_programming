@@ -227,90 +227,24 @@ This implementation has been thoroughly verified against `requirement.txt`:
 - ✅ **Portfolio NAV**: Sum of all position market values
 
 
-## Installation
+## Quick Start & Testing
 
-### Quick Setup (Windows - I used windows to test)
+### 📋 **Prerequisites**
+- **Java**: JDK 17+ installed
+- **Git**: For cloning the repository
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd crypto_java_programming
-   ```
+### 🚀 **Platform-Specific Commands**
 
-2. **Run the setup script**
-   ```bash
-   setup.bat
-   ```
-   This will:
-   - Check Java installation
-   - Download all dependencies
-   - Build the application
-   - Verify everything is working
+| Platform | Setup | Build | Run | Test |
+|----------|-------|-------|-----|------|
+| **Windows** | `git clone <repo>`<br>`cd crypto_java_programming`<br>`setup.bat` | `.\gradlew.bat build` | `.\gradlew.bat run`<br>`run.bat` | `.\gradlew.bat test` |
+| **macOS/Linux** | `git clone <repo>`<br>`cd crypto_java_programming`<br>`chmod +x gradlew` | `./gradlew build` | `./gradlew run` | `./gradlew test` |
 
-3. **Run the application**
-   ```bash
-   run.bat
-   ```
-   Or alternatively:
-   ```bash
-   gradlew.bat run
-   ```
+### 🧪 **Test Suite**
+- **Unit Tests**: 170+ tests (100% passing)
+- **BDD Tests**: Cucumber feature tests
+- **Coverage**: Portfolio calculations, Black-Scholes pricing, market data simulation, thread safety, event-driven architecture, Protobuf serialization, CSV loading, database operations
 
-### Manual Setup
-
-1. **Ensure JDK 17+ is installed**
-   ```bash
-   java -version
-   ```
-
-2. **Build the project**
-   ```bash
-   gradlew.bat build
-   ```
-
-3. **Run the application**
-   ```bash
-   gradlew.bat run
-   ```
-
-## Cross-Platform Compatibility
-
-This project is fully cross-platform and works on Windows, macOS, and Linux systems.
-
-### Platform-Specific Commands
-
-| Platform | Build Command | Run Command | Notes |
-|----------|---------------|-------------|-------|
-| **Windows** | `.\gradlew.bat build` | `.\gradlew.bat run` | Uses batch files |
-| **macOS/Linux** | `./gradlew build` | `./gradlew run` | Uses shell scripts |
-
-### macOS/Linux Setup (pending to test)
-
-1. **Make scripts executable** (first time only)
-   ```bash
-   chmod +x gradlew
-   ```
-
-2. **Build the project**
-   ```bash
-   ./gradlew build
-   ```
-
-3. **Run the application**
-   ```bash
-   ./gradlew run
-   ```
-
-### Cross-Platform Features
-
-- ✅ **Java 17+ compatibility** - Modern Java features and performance
-- ✅ **Gradle 8.5 wrapper** - Includes both `gradlew` and `gradlew.bat`
-- ✅ **H2 database** - Embedded database works everywhere
-- ✅ **Spring Framework 6.x** - Cross-platform dependency injection with Jakarta EE
-- ✅ **Thread-safe architecture** - Consistent behavior across platforms
-- ✅ **Event-driven architecture** - Real-time event streaming with Protobuf
-- ✅ **YAML configuration** - Human-readable configuration format
-- ✅ **Modern Java features** - Switch expressions, records, pattern matching
 
 ## Usage
 
@@ -383,12 +317,14 @@ TELSA-FEB-2026-800-P |      -1500 | $     75.14 | $  -112712.96 [UP +$8.06 (+12.
 ```
 
 #### Key Output Features
-- **Real-time Updates**: Portfolio recalculates every 0.5-2 seconds
-- **Price Change Tracking**: Shows absolute and percentage changes
-- **Option Pricing**: Active options show Black-Scholes theoretical prices
-- **Expired Options**: Show $0.00 for expired options (marked as SAME)
-- **Short Positions**: Negative position sizes and market values
-- **Performance Metrics**: Calculation time and position counts
+- **Smart Display Logic**: Only shows portfolio updates when prices actually change (no redundant displays)
+- **Price Change Detection**: Compares current prices with previous prices to detect real changes
+- **Change Indicators**: [NEW] for initial display, [UP/DOWN] with absolute and percentage changes, [SAME] for unchanged prices
+- **Expired Options**: Show $0.00 for expired options (marked as [SAME])
+- **Short Positions**: Negative position sizes and market values clearly displayed
+- **Performance Metrics**: Calculation time (ms) and position counts
+- **Event-Driven Updates**: Real-time portfolio recalculations triggered by market data changes
+- **Formatted Output**: Professional table format with aligned columns and clear separators
 
 ## Technical Details
 
@@ -793,55 +729,6 @@ The system provides real-time console output showing:
 - **Robust Error Handling**: Comprehensive error handling and validation throughout the application 
 - **Add Cache layer for Security**: add cache layer to security table by type and symbol 
 
-## Testing
-
-The project includes a comprehensive test suite with unit tests and BDD tests using Cucumber:
-
-### Running Tests
-```bash
-# Run all tests
-.\gradlew test
-
-# Run tests on Unix/macOS
-./gradlew test
-
-# Skip tests during build
-.\gradlew build -x test
-```
-
-### Test Coverage
-- **Unit Tests**: 149 tests covering core business logic
-- **BDD Tests**: Cucumber feature tests for portfolio management scenarios
-- **Test Categories**:
-  - Portfolio calculations and NAV computation
-  - Black-Scholes option pricing
-  - Market data simulation with geometric Brownian motion
-  - Thread safety and concurrency
-  - Event-driven architecture
-  - Protobuf serialization/deserialization
-  - CSV position loading and validation
-  - Database operations and security definitions
-
-### Test Results
-- **Success Rate**: 100% (149 tests, all passing)
-- **Test Types**: JUnit 5, Mockito, Spring Test, Cucumber
-- **Coverage Areas**: All major components and business logic
-- **Test Quality**: Comprehensive test coverage with proper mocking and edge case handling
-
-## Recent Improvements
-
-### ✅ **Test Suite Enhancements (Latest)**
-- **Fixed All Test Failures**: Resolved 2 failing tests that were caused by ticker format inconsistencies
-- **Improved Test Data**: Updated test data to match actual CSV format (hyphens instead of underscores)
-- **Enhanced Mock Setup**: Better configuration of Spring dependencies in unit tests
-- **100% Test Success Rate**: All 149 tests now pass successfully
-
-
-### 📊 **Current Project Status**
-- ✅ **All Requirements Fulfilled**: 100% compliance with requirement.txt specifications
-- ✅ **All Tests Passing**: 149/149 tests successful (100% success rate)
-- ✅ **No Warnings or Errors**: Clean build and execution
-- ✅ **Production Ready**: Enterprise-grade code quality with comprehensive testing
 
 ## License
 
