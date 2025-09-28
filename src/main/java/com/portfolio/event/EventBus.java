@@ -100,8 +100,12 @@ public class EventBus {
      * @param listener The listener to register
      */
     public void subscribe(PortfolioEventListener listener) {
-        listeners.add(listener);
-        logger.info("Registered event listener: " + listener.getClass().getSimpleName());
+        if (!listeners.contains(listener)) {
+            listeners.add(listener);
+            logger.info("Registered event listener: " + listener.getClass().getSimpleName());
+        } else {
+            logger.fine("Event listener already registered: " + listener.getClass().getSimpleName());
+        }
     }
     
     /**

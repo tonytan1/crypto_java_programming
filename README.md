@@ -727,6 +727,7 @@ The system provides real-time console output showing:
 - **Independent Random Generation to fix Random Number**: Each stock has its own random number generator to avoid correlation and fixed "3 UP, 3 DOWN" pattern by giving each stock independent random seeds
 - **Add Cache layer for Security**: add cache layer to security table by type and symbol 
 - **Thread Pool Best Practices**: Replaced unsafe Executors.newCachedThreadPool() and Executors.newScheduledThreadPool() with Spring's ThreadPoolTaskExecutor and ThreadPoolTaskScheduler, all configured via YAML for better resource management and production safety
+- **Event Listener Duplication Fix**: Fixed duplicate event listener registration issue where ConsoleEventListener was being registered multiple times due to Spring's @PostConstruct lifecycle, causing duplicate log entries. Added duplicate check in EventBus.subscribe() method to prevent the same listener from being registered more than once
 - **Unit Testing**: Comprehensive test suite covering core business logic including portfolio calculations, option pricing, market data simulation, and thread safety. All tests pass successfully.
 - **Robust Error Handling**: Comprehensive error handling and validation throughout the application 
 
